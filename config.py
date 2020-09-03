@@ -6,7 +6,8 @@ class ConfigClass(object):
     # NFS
     # NFS_ROOT_PATH = os.path.expanduser("~/Desktop/indoc/fake_nfs")
     NFS_ROOT_PATH = "/data/vre-storage"
-    TEMP_BASE = os.path.expanduser("~/tmp/flask_uploads/")
+    # TEMP_BASE = os.path.expanduser("~/tmp/flask_uploads/")
+    TEMP_BASE = "/data/vre-storage/api-file-upload-tmp-tmp"
     DOWNLOAD_KEY = 'indoc101'
 
     # Neo4j Service

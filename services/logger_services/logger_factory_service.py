@@ -18,11 +18,11 @@ class SrvLoggerFactory(metaclass=MetaService):
             # File Handler
             handler = logging.FileHandler("logs/{}.log".format(self.name))        
             handler.setFormatter(my_formatter)
-            handler.setLevel(logging.INFO)
+            handler.setLevel(logging.DEBUG)
             # Standard Out Handler
             stdout_handler = logging.StreamHandler(sys.stdout)
             stdout_handler.setFormatter(my_formatter)
-            stdout_handler.setLevel(logging.INFO)
+            stdout_handler.setLevel(logging.DEBUG)
             # Standard Err Handler
             stderr_handler = logging.StreamHandler(sys.stderr)
             stderr_handler.setFormatter(my_formatter)

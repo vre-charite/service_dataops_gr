@@ -24,6 +24,7 @@ post_model = module_api.model("upload_chunks_post", {
     "uploader": fields.String,
 })
 
+
 class ChunkUploadRestful(Resource):
     _logger = SrvLoggerFactory('api_file_upload').get_logger()
 
@@ -41,8 +42,9 @@ class ChunkUploadRestful(Resource):
             _form = request.form
             file_upload_form = file_upload_form_factory(_form, container_id)
             self._logger.info('Start Uploading Chunks To Container: ' + str(container_id) + "----- Chunk Number: "
-                + str(file_upload_form.resumable_chunk_number))
-            self._logger.info('ChunkUploadRestful file_upload_form: ' + str(file_upload_form.to_dict))
+                              + str(file_upload_form.resumable_chunk_number))
+            self._logger.info(
+                'ChunkUploadRestful file_upload_form: ' + str(file_upload_form.to_dict))
             chunk_data = request.files['file']
             temp_dir = os.path.join(
                 ConfigClass.TEMP_BASE, file_upload_form.resumable_identifier)
@@ -50,6 +52,8 @@ class ChunkUploadRestful(Resource):
                 chunk_name = generate_chunk_name(
                     file_upload_form.resumable_filename, file_upload_form.resumable_chunk_number)
                 chunk_file = os.path.join(temp_dir, chunk_name)
+                self._logger.info(
+                    'Start to save chunk {} to destination {}'.format(chunk_name, chunk_file))
                 chunk_data.save(chunk_file)
             except Exception as e:
                 self._logger.error(
@@ -57,7 +61,7 @@ class ChunkUploadRestful(Resource):
                 _res.set_code(EAPIResponseCode.forbidden)
                 _res.set_error_msg('Failed to save chunk in tmp' + str(e))
             _res.set_result('Succeed.')
-            self._logger.info(_res.to_dict)
+            self._logger.info(str(_res.to_dict))
             return _res.to_dict, _res.code
         except Exception as e:
             self._logger.error('Failed to save chunk ' + str(e))

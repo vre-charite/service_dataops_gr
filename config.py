@@ -6,13 +6,15 @@ class ConfigClass(object):
     # NFS
     # NFS_ROOT_PATH = os.path.expanduser("~/Desktop/indoc/fake_nfs")
     NFS_ROOT_PATH = "/data/vre-storage"
+    VRE_ROOT_PATH = "/vre-data"
+
     # TEMP_BASE = os.path.expanduser("~/tmp/flask_uploads/")
     TEMP_BASE = "/data/vre-storage/api-file-upload-tmp-tmp"
     DOWNLOAD_KEY = 'indoc101'
 
     # Neo4j Service
     # NEO4J_SERVICE = "http://0.0.0.0:5062/v1/neo4j/"  # Local
-    NEO4J_SERVICE = "http://graphapi.utility:5062/v1/neo4j/"  # Server
+    NEO4J_SERVICE = "http://neo4j.utility:5062/v1/neo4j/"  # Server
 
     # Metadata service
     METADATA_API = "http://cataloguing.utility:5064"  # Server

@@ -636,7 +636,7 @@ class fileInfo(Resource):
         page = int(request.args.get('page', 0))
 
         # use the stage variable to indicate entity type
-        entity_type = 'nfs_file'
+        entity_type = request.args.get('entity_type', 'nfs_file')
 
         # also add new query string for sorting the column default is time
         sorting = request.args.get('column', 'createTime')
@@ -653,25 +653,60 @@ class fileInfo(Resource):
         # the file only he uploaded
         admin_view = request.args.get('admin_view', True)
 
+        # new parameter filter
+        # the parameter should pass as stringfied json default is "{}"
+        # in below will parase out and json loads into dict
+        # if there is an error when parasing it will set to default value
+        filter_condition = request.args.get('filter', '{}')
+        # print(filter_condition)
+        try:
+            filter_condition = json.loads(filter_condition)
+        except Exception as e:
+            print(e)
+            filter_condition = {}
+
+        #####################################################################
+        # Note here I have overwrite the condition at the end               #
+        # because there might be hacky user to filter by other bucket/owner #
+        # so in order to aggregate all the filtering condition              #
+        # I need to overwrite with current bucket and based on admin view   #
+        #####################################################################
+
+        filter_condition.update({'bucketName': container_path})
         # if the current user is uploader then he can only see the count by himself
-        criterion_template = [
-            {
-                'attributeName': 'bucketName',
-                'attributeValue': container_path,
-                'operator': 'eq'
-            }
-        ]
-        criterion = list(criterion_template)
+        # criterion_template = [
+        #     {
+        #         'attributeName': 'bucketName',
+        #         'attributeValue': container_path,
+        #         'operator': 'eq'
+        #     }
+        # ]
+        # criterion = list(criterion_template)
+        # print(current_identity['username'])
+        # print(current_identity['project_role'])
         if current_identity['project_role'] != 'admin':
-            criterion.append({
-                'attributeName': 'owner',
-                'attributeValue': current_identity['username'],
-                'operator': 'eq'
-            })
+            filter_condition.update({'owner': current_identity['username']})
+            # criterion.append({
+            #     'attributeName': 'owner',
+            #     'attributeValue': current_identity['username'],
+            #     'operator': 'eq'
+            # })
         elif current_identity['project_role'] == 'admin' and admin_view != True:
+            filter_condition.update({'owner': current_identity['username']})
+            # criterion.append({
+            #     'attributeName': 'owner',
+            #     'attributeValue': current_identity['username'],
+            #     'operator': 'eq'
+            # })
+
+        # based on the filtering condition
+        # loop over the json to add the equal constaint
+        # TODO might add the range condition
+        criterion = []
+        for x in filter_condition:
             criterion.append({
-                'attributeName': 'owner',
-                'attributeValue': current_identity['username'],
+                'attributeName': x,
+                'attributeValue': filter_condition[x],
                 'operator': 'eq'
             })
 
@@ -697,8 +732,8 @@ class fileInfo(Resource):
             'termName': None
         }
         # if we have the full text search input
-        if text:
-            post_data.update({'query': '"%s"' % text})
+        # if text:
+        #     post_data.update({'query': '"%s"' % text})
 
         try:
             res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',

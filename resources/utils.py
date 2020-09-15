@@ -50,7 +50,29 @@ class fs(object):
             if not already_moved:
                 project_code = bucket_name
                 input_path = upload_path + '/' + file_name
-                send_to_queue(input_path, project_code, metadatas.get('generateID'), uploader)
+                payload = {
+                    "event_type": "data_uploaded",
+                    "payload": {
+                        "input_path": input_path,
+                        "project": project_code,
+                        "generate_id": metadatas.get('generateID'),
+                        "uploader": uploader
+                    },
+                    "create_timestamp": time.time()
+                }
+                send_to_queue(payload)
+
+                copy_payload = {
+                    "event_type": "data_processed",
+                    "payload": {
+                        "input_path": input_path,
+                        "project": project_code,
+                        "generate_id": metadatas.get('generateID'),
+                        "uploader": uploader
+                    },
+                    "create_timestamp": time.time()
+                }
+                send_to_queue(copy_payload)
 
         except Exception as e:
             current_app.logger.error('moving file but {}'.format(str(e)))
@@ -162,31 +184,20 @@ class fs(object):
             return file_list
 
         # check if parent path exist
-        root_dir = os.path.join(ConfigClass.NFS_ROOT_PATH, path)
-        if not os.path.isdir(root_dir):
+        if not os.path.isdir(path):
             raise ValueError('Path to folder does not exist.')
 
         # recursively list folder
-        res = fast_scandir(root_dir)
+        res = fast_scandir(path)
         return res
 
     def remove_folder(self, path):
         shutil.rmtree(path)
 
 
-def send_to_queue(input_path, project, generate_id, uploader):
+def send_to_queue(payload):
     _logger = current_app.logger
     url = ConfigClass.service_queue_send_msg_url
-    payload = {
-        "event_type": "data_uploaded",
-        "payload": {
-                "input_path": input_path,
-                "project": project,
-                "generate_id": generate_id,
-                "uploader": uploader
-            },
-        "create_timestamp": datetime.datetime.utcnow().isoformat()
-    }
     _logger.info("Sending Message To Queue: " + str(payload))
     res = requests.post(
         url=url,
@@ -197,6 +208,7 @@ def send_to_queue(input_path, project, generate_id, uploader):
     return json.loads(res.text)
 
 # save the chunk data
+
 
 def generate_chunk_name(uploaded_filename, chunk_number):
     return uploaded_filename + '_part_%03d' % chunk_number

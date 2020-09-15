@@ -19,14 +19,15 @@ post_model = module_api.model("upload_pre_post", {
 
 post_success_model = module_api.model(
     "upload_pre_post_success", {
-        'code': fields.Integer, ## by default success
-        'error_msg': fields.String, ## empty when success
+        'code': fields.Integer,  # by default success
+        'error_msg': fields.String,  # empty when success
         'result': {
             "temp_dir": fields.String,
             "message": fields.String,
         },
     }
 )
+
 
 class PreUploadRestful(Resource):
     _logger = SrvLoggerFactory('api_file_upload').get_logger()
@@ -43,8 +44,10 @@ class PreUploadRestful(Resource):
         # get form
         _form = request.form
         file_upload_form = file_upload_form_factory(_form, container_id)
-        self._logger.info('Start Pre Uploading To Container: ' + str(container_id))
-        self._logger.info('PreUploadRestful file_upload_form: ' + str(file_upload_form.to_dict))
+        self._logger.info(
+            'Start Pre Uploading To Container: ' + str(container_id))
+        self._logger.info(
+            'PreUploadRestful file_upload_form: ' + str(file_upload_form.to_dict))
         if file_upload_form.resumable_identifier == "error" \
                 or file_upload_form.resumable_filename == "error":
             _res.set_code(EAPIResponseCode.bad_request)
@@ -88,6 +91,7 @@ class PreUploadRestful(Resource):
             _res.set_error_msg(error_msg)
             _res.set_code(EAPIResponseCode.internal_error)
         return _res.to_dict, _res.code
+
 
 def pre_upload_init_check(container_id, resumable_filename, _logger):
     code = EAPIResponseCode.success

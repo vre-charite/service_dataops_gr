@@ -27,9 +27,15 @@ class folders(Resource):
         # Get folder path from args
         post_data = request.get_json()
         container_id = post_data.get('container_id', None)
-        container_path = ''
+
+        # Determine root path
+        service = post_data.get('service', None)
+        root_path = ConfigClass.NFS_ROOT_PATH
+        if service == 'VRE':
+            root_path = ConfigClass.VRE_ROOT_PATH
 
         # Fetch upload path from neo4j service
+        container_path = ''
         if(container_id is not None):
             try:
                 url = ConfigClass.NEO4J_SERVICE + \
@@ -49,7 +55,7 @@ class folders(Resource):
 
         sub_path = post_data.get('path', '')
         full_path = os.path.join(
-            ConfigClass.NFS_ROOT_PATH, container_path, sub_path)
+            root_path, container_path, sub_path)
 
         # Create a folder
         try:
@@ -69,6 +75,7 @@ class folders(Resource):
         '''
         This method allow to walk through folders.
         '''
+
         # Get folder path from args, decode utf-8
         container_id = request.args.get('container_id', None)
         container_path = ""
@@ -92,17 +99,20 @@ class folders(Resource):
                 return {'result': 'Cannot find the path attribute.'}, 403
 
         sub_path = unquote(request.args.get('path', ''))
-        full_path = os.path.join(
+        gr_full_path = os.path.join(
             ConfigClass.NFS_ROOT_PATH, container_path, sub_path)
+        vre_full_path = os.path.join(
+            ConfigClass.VRE_ROOT_PATH, container_path, sub_path)
 
         # Specify the output field: file/folder/both
         field = request.args.get('field', None)
 
         # Recusive Fetch folder list
         try:
-            result = fs().list_folder(full_path, field)
+            gr_folders = fs().list_folder(gr_full_path, field)
+            vre_folders = fs().list_folder(vre_full_path, field)
 
         except Exception as e:
             return {'Error': str(e)}, 403
 
-        return {'result': result}, 200
+        return {'result': {'gr': gr_folders, 'vre': vre_folders}}, 200

@@ -61,7 +61,8 @@ class ChunkUploadRestful(Resource):
                 _res.set_code(EAPIResponseCode.forbidden)
                 _res.set_error_msg('Failed to save chunk in tmp' + str(e))
             _res.set_result('Succeed.')
-            self._logger.info(str(_res.to_dict))
+            self._logger.info('Succeed: Uploaded Chunks To Container: ' + str(container_id) + "----- Chunk Number: "
+                              + str(file_upload_form.resumable_chunk_number))
             return _res.to_dict, _res.code
         except Exception as e:
             self._logger.error('Failed to save chunk ' + str(e))

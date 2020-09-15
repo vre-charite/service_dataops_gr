@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dataops-gr
+  namespace: greenroom
+  labels:
+    app: dataops-gr
+    env: charite
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dataops-gr
+      env: charite
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+      maxUnavailable: 33%
+  template:
+    metadata:
+      labels:
+        app: dataops-gr
+        env: charite
+    spec:
+      containers:
+        - name: dataops-gr
+          image: 10.32.42.225:5000/dataops-gr:<VERSION>
+          ports:
+            - containerPort: 5063
+          env:
+          - name: env
+            value: "charite"
+          readinessProbe:
+            tcpSocket:
+              port: 5063
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "500m"
+            limits:
+              memory: "500Mi"
+              cpu: "500m"
+          volumeMounts:
+          - name: nfsvol
+            mountPath: /data/vre-storage
+          - name: nfsvol-vre-data
+            mountPath: /vre-data
+      nodeSelector:
+        namespace: greenroom
+      volumes:
+        - name: nfsvol
+          persistentVolumeClaim:
+            claimName: greenroom-storage
+        - name: nfsvol-vre-data
+          persistentVolumeClaim:
+            claimName: vre-data-greenroom
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dataops-gr
+  namespace: greenroom
+  labels:
+    app: dataops-gr
+    env: charite
+spec:
+  ports:
+  - name: dataops-gr
+    port: 5063
+    targetPort: 5063
+  selector:
+    app: dataops-gr
+    env: charite
+  type: ClusterIP

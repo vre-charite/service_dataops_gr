@@ -23,6 +23,10 @@ spec:
         app: dataops-gr
         env: charite
     spec:
+      securityContext:
+        runAsUser: 144171
+        runAsGroup: 100100
+        fsGroup: 100100
       containers:
         - name: dataops-gr
           image: 10.32.42.225:5000/dataops-gr:<VERSION>
@@ -31,9 +35,6 @@ spec:
           env:
           - name: env
             value: "charite"
-          securityContext:
-            runAsUser: 144171
-            runAsGroup: 100100
           readinessProbe:
             tcpSocket:
               port: 5063

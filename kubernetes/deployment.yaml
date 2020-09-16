@@ -31,6 +31,9 @@ spec:
           env:
           - name: env
             value: "charite"
+          securityContext:
+            runAsUser: 144171
+            runAsGroup: 100100
           readinessProbe:
             tcpSocket:
               port: 5063

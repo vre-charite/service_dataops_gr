@@ -62,17 +62,17 @@ class fs(object):
                 }
                 send_to_queue(payload)
 
-                copy_payload = {
-                    "event_type": "data_processed",
-                    "payload": {
-                        "input_path": input_path,
-                        "project": project_code,
-                        "generate_id": metadatas.get('generateID'),
-                        "uploader": uploader
-                    },
-                    "create_timestamp": time.time()
-                }
-                send_to_queue(copy_payload)
+                # copy_payload = {
+                #     "event_type": "data_processed",
+                #     "payload": {
+                #         "input_path": input_path,
+                #         "project": project_code,
+                #         "generate_id": metadatas.get('generateID'),
+                #         "uploader": uploader
+                #     },
+                #     "create_timestamp": time.time()
+                # }
+                # send_to_queue(copy_payload)
 
         except Exception as e:
             current_app.logger.error('moving file but {}'.format(str(e)))

@@ -74,7 +74,8 @@ class files(Resource):
             # do the initial check for the first chunk
             if resumabl_chunk_number == 1:
                 # Check if container exist and fetch upload path
-                url = ConfigClass.NEO4J_SERVICE + 'nodes/Dataset/node/' + str(container_id)
+                url = ConfigClass.NEO4J_SERVICE + \
+                    'nodes/Dataset/node/' + str(container_id)
                 res = requests.get(url=url)
                 if res.status_code != 200:
                     current_app.logger.error(
@@ -159,7 +160,8 @@ class files(Resource):
                 print('All chunks received, start background task...')
 
                 # Fetch upload path from neo4j service
-                url = ConfigClass.NEO4J_SERVICE + 'nodes/Dataset/node/' + str(container_id)
+                url = ConfigClass.NEO4J_SERVICE + \
+                    'nodes/Dataset/node/' + str(container_id)
                 res = requests.get(url=url)
                 datasets = res.json()
                 if res.status_code != 200:
@@ -684,20 +686,20 @@ class fileInfo(Resource):
         # criterion = list(criterion_template)
         # print(current_identity['username'])
         # print(current_identity['project_role'])
-        if current_identity['project_role'] != 'admin':
+        if admin_view != 'true' and current_identity['project_role'] != 'admin':
             filter_condition.update({'owner': current_identity['username']})
             # criterion.append({
             #     'attributeName': 'owner',
             #     'attributeValue': current_identity['username'],
             #     'operator': 'eq'
             # })
-        elif current_identity['project_role'] == 'admin' and admin_view != True:
-            filter_condition.update({'owner': current_identity['username']})
-            # criterion.append({
-            #     'attributeName': 'owner',
-            #     'attributeValue': current_identity['username'],
-            #     'operator': 'eq'
-            # })
+        # elif current_identity['project_role'] == 'admin' and admin_view != True:
+        #     filter_condition.update({'owner': current_identity['username']})
+        #     # criterion.append({
+        #     #     'attributeName': 'owner',
+        #     #     'attributeValue': current_identity['username'],
+        #     #     'operator': 'eq'
+        #     # })
 
         # based on the filtering condition
         # loop over the json to add the equal constaint

@@ -7,7 +7,7 @@ metadata:
     app: dataops-gr
     env: charite
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: dataops-gr
@@ -15,7 +15,7 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 3
+      maxSurge: 1
       maxUnavailable: 33%
   template:
     metadata:

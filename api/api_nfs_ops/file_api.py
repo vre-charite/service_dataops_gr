@@ -550,6 +550,8 @@ class file(Resource):
                          attachment_filename=filename,
                          cache_timeout=-1)
 
+# Deprecated
+
 
 class fileInfo(Resource):
 
@@ -675,31 +677,9 @@ class fileInfo(Resource):
         #####################################################################
 
         filter_condition.update({'bucketName': container_path})
-        # if the current user is uploader then he can only see the count by himself
-        # criterion_template = [
-        #     {
-        #         'attributeName': 'bucketName',
-        #         'attributeValue': container_path,
-        #         'operator': 'eq'
-        #     }
-        # ]
-        # criterion = list(criterion_template)
-        # print(current_identity['username'])
-        # print(current_identity['project_role'])
+
         if admin_view != 'true' and current_identity['project_role'] != 'admin':
             filter_condition.update({'owner': current_identity['username']})
-            # criterion.append({
-            #     'attributeName': 'owner',
-            #     'attributeValue': current_identity['username'],
-            #     'operator': 'eq'
-            # })
-        # elif current_identity['project_role'] == 'admin' and admin_view != True:
-        #     filter_condition.update({'owner': current_identity['username']})
-        #     # criterion.append({
-        #     #     'attributeName': 'owner',
-        #     #     'attributeValue': current_identity['username'],
-        #     #     'operator': 'eq'
-        #     # })
 
         # based on the filtering condition
         # loop over the json to add the equal constaint
@@ -841,6 +821,7 @@ class processedFile(Resource):
     @jwt_required()
     @check_role("member")
     # use query string to find the files
+    # Deprecated
     def get(self):
         container_id = request.args.get('container_id', None)
         pipeline = request.args.get('pipeline', None)

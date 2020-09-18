@@ -21,7 +21,7 @@ post_model = module_api.model("copy_file_post", {
 })
 
 
-class fileCopyRestful(Resource):
+class FileCopyRestful(Resource):
     _logger = SrvLoggerFactory('api_file_copy').get_logger()
 
     @nfs_entity_ns.expect(post_model)

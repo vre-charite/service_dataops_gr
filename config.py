@@ -9,7 +9,7 @@ class ConfigClass(object):
     VRE_ROOT_PATH = "/vre-data"
 
     # TEMP_BASE = os.path.expanduser("~/tmp/flask_uploads/")
-    TEMP_BASE = "/data/vre-storage/api-file-upload-tmp-tmp"
+    TEMP_BASE = "/tmp/dataops"
     DOWNLOAD_KEY = 'indoc101'
 
     # Neo4j Service

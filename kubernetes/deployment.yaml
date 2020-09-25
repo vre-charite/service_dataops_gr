@@ -50,9 +50,8 @@ spec:
             mountPath: /vre-data
           - mountPath: /tmp/dataops
             name: temp-volume
-      nodeName: s-hdp-vre-h001
-#      nodeSelector:
-#        namespace: greenroom
+      nodeSelector:
+        namespace: greenroom
       volumes:
         - name: nfsvol
           persistentVolumeClaim:

@@ -61,7 +61,7 @@ spec:
             claimName: vre-data-greenroom
         - name: temp-volume
           hostPath:
-            path: /data01/dataops
+            path: /tmp/temp-data/dataops
             type: Directory
 ---
 apiVersion: v1

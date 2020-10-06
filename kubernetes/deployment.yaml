@@ -58,7 +58,8 @@ spec:
             claimName: greenroom-storage
         - name: nfsvol-vre-data
           persistentVolumeClaim:
-            claimName: vre-data-greenroom
+#            claimName: vre-data-greenroom
+            claimName: greenroom-vre-storage
         - name: temp-volume
           hostPath:
             path: /tmp/temp-data/dataops

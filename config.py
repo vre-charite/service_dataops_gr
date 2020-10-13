@@ -28,7 +28,8 @@ class ConfigClass(object):
     REDIS_PORT = 6379
     REDIS_DB = 0
     REDIS_PASSWORD = {
-        'staging': '8EH6QmEYJN'
+        'staging': '8EH6QmEYJN',
+        'charite': 'o2x7vGQx6m'
     }.get(env, "5wCCMMC1Lk")
 
     service_queue_send_msg_url = "http://queue-producer.greenroom:6060/v1/send_message"

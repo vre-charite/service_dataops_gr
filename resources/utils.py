@@ -11,6 +11,8 @@ import json
 import requests
 from flask import current_app
 import datetime
+import services.file_upload as srv_upload
+import models.fsm_file_upload as fsmup
 
 
 class fs(object):
@@ -18,7 +20,9 @@ class fs(object):
     #                        File related functions                        #
     # -------------------------------------------------------------------- #
     @executor.job
-    def upload_to_nfs(temp_dir, chunk_paths, target_file_name, upload_path, uploader, tags, metadatas, bucket_name, size):
+    def upload_to_nfs(temp_dir, chunk_paths, target_file_name,
+                      upload_path, uploader, tags, metadatas, bucket_name, size,
+                      status_mgr: srv_upload.SrvFileUpStateMgr):
         # Upload task to combine file chunks and upload to nfs
         already_moved = False
         try:
@@ -82,6 +86,8 @@ class fs(object):
             'done with moving files {}'.format(target_file_name))
 
         try:
+            current_app.logger.debug(
+                'create atlas record but tags {} in format {}'.format(tags, type(tags)))
             # create entity in atlas
             post_data = {
                 'referredEntities': {},
@@ -137,7 +143,7 @@ class fs(object):
             return False, 'Create atlas record but %s' % str(e)
 
         current_app.logger.info('done with creating atlas record')
-
+        status_mgr.go(fsmup.EState.FINALIZED)
         try:
             # clean up tmp folder
             shutil.rmtree(temp_dir)
@@ -146,7 +152,7 @@ class fs(object):
             return False, 'Clean up folder but %s' % str(e)
 
         current_app.logger.info('done with clean up folders.')
-
+        status_mgr.go(fsmup.EState.SUCCEED)
         return True, 'success'
 
     # -------------------------------------------------------------------- #

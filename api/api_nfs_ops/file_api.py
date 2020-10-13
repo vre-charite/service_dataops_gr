@@ -244,6 +244,8 @@ class file_predownload(Resource):
         post_data = request.get_json()
         current_app.logger.info(
             'Call API for predownload to container {} with info {}'.format(str(container_id), post_data))
+        current_app.logger.info('Request IP: ' + str(request.remote_addr))
+
         files = post_data.get("files", None)
         if not files or not isinstance(files, list) or len(files) < 1:
             return {'result': 'Please provide files in correct format.'}, 403
@@ -365,6 +367,8 @@ class file_predownload(Resource):
         '''
         current_app.logger.info(
             'Call API for check download status to container {} with info {}'.format(str(container_id), request.args.to_dict()))
+        current_app.logger.info('Request IP: ' + str(request.remote_addr))
+
         task_id = request.args.get('task_id', None)
         if(task_id is None):
             return {'result': 'task id is required.'}, 403
@@ -519,6 +523,7 @@ class file(Resource):
         '''
         This method allow to download single file.
         '''
+        current_app.logger.info('Request IP: ' + str(request.remote_addr))
         # Check if token provided
         token = request.args.get('token', None)
         if not token:
@@ -1238,6 +1243,9 @@ class dailyFileCount(Resource):
         # allow to filter on the user
         user = request.args.get('user', None)
 
+        # only return download or upload
+        action = request.args.get('action', None)
+
         # new update here we can filter on the date range
         # format should be yyyy-mm-dd or yyyy/mm/dd
         start_timestamp = request.args.get('start_date', None)
@@ -1270,12 +1278,12 @@ class dailyFileCount(Resource):
             {
                 'attributeName': 'createTime',
                 'attributeValue': int(start_date),
-                'operator': 'gt'
+                'operator': 'gte'
             },
             {
                 'attributeName': 'createTime',
                 'attributeValue': int(end_date),
-                'operator': 'lt'
+                'operator': 'lte'
             }
         ]
         criterion = list(criterion_template)
@@ -1313,7 +1321,7 @@ class dailyFileCount(Resource):
             'tagFilters': None,
             'attributes': ['owner', 'downloader', 'fileName'],
             'limit': page_size,
-            'offset': page,
+            'offset': str(int(page) * int(page_size)),
             'sortBy': 'createTime',
             'sortOrder': 'DESCENDING',
             'typeName': 'nfs_file',
@@ -1322,27 +1330,32 @@ class dailyFileCount(Resource):
         }
 
         try:
-            res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
-                                json=post_data, headers={'content-type': 'application/json'})
-            if res.status_code != 200:
-                return {'result': res.json()}, 403
-            res = res.json()['result']
-            upload_count = res['approximateCount']
+            if action == 'upload' or action == 'all':
+                res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
+                                    json=post_data, headers={'content-type': 'application/json'})
+                if res.status_code != 200:
+                    return {'result': res.json()}, 403
+                res = res.json()['result']
+                upload_count = res['approximateCount']
 
-            # because if there is no file it will not return entities field
-            # so check it up
-            if not res.get('entities', None):
-                res.update({'entities': []})
+                # because if there is no file it will not return entities field
+                # so check it up
+                if not res.get('entities', None):
+                    res.update({'entities': []})
 
-            # also change the timestamp from int to string
-            for e in res['entities']:
-                timestamp_int = e['attributes'].get('createTime', None)
-                # print(timestamp_int)
-                if timestamp_int:
-                    central = datetime.fromtimestamp(timestamp_int)
-                    e['attributes']['createTime'] = central.strftime(
-                        '%Y-%m-%d %H:%M:%S')
-            upload_log = res['entities']
+                # also change the timestamp from int to string
+                for e in res['entities']:
+                    timestamp_int = e['attributes'].get('createTime', None)
+                    # print(timestamp_int)
+                    if timestamp_int:
+                        central = datetime.fromtimestamp(timestamp_int)
+                        e['attributes']['createTime'] = central.strftime(
+                            '%Y-%m-%d %H:%M:%S')
+                upload_log = res['entities']
+            else:
+                upload_count = 0
+                upload_log = []
+
         except Exception as e:
             return {'result': str(e)}, 403
 
@@ -1375,27 +1388,32 @@ class dailyFileCount(Resource):
             post_data['entityFilters']['criterion'] = criterion
 
         try:
-            res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
-                                json=post_data, headers={'content-type': 'application/json'})
-            if res.status_code != 200:
-                return {'result': res.json()}, 403
-            res = res.json()['result']
-            download_count = res['approximateCount']
+            if action == 'download' or action == 'all':
+                res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
+                                    json=post_data, headers={'content-type': 'application/json'})
+                if res.status_code != 200:
+                    return {'result': res.json()}, 403
+                res = res.json()['result']
+                download_count = res['approximateCount']
 
-            # because if there is no file it will not return entities field
-            # so check it up
-            if not res.get('entities', None):
-                res.update({'entities': []})
+                # because if there is no file it will not return entities field
+                # so check it up
+                if not res.get('entities', None):
+                    res.update({'entities': []})
 
-            # also change the timestamp from int to string
-            for e in res['entities']:
-                timestamp_int = e['attributes'].get('createTime', None)
-                # print(timestamp_int)
-                if timestamp_int:
-                    central = datetime.fromtimestamp(timestamp_int)
-                    e['attributes']['createTime'] = central.strftime(
-                        '%Y-%m-%d %H:%M:%S')
-            download_log = res['entities']
+                # also change the timestamp from int to string
+                for e in res['entities']:
+                    timestamp_int = e['attributes'].get('createTime', None)
+                    # print(timestamp_int)
+                    if timestamp_int:
+                        central = datetime.fromtimestamp(timestamp_int)
+                        e['attributes']['createTime'] = central.strftime(
+                            '%Y-%m-%d %H:%M:%S')
+                download_log = res['entities']
+            else:
+                download_count = 0
+                download_log = []
+
         except Exception as e:
             return {'result': str(e)}, 403
 

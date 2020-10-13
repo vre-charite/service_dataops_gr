@@ -1,8 +1,14 @@
 import copy
+import ast
+from services.logger_services.logger_factory_service import SrvLoggerFactory
+
+
+_logger = SrvLoggerFactory('api_file_tag').get_logger()
+
 
 class FileUploadForm:
     def __init__(self):
-        self._attribute_map =  {
+        self._attribute_map = {
             "resumable_identifier": "",
             "resumable_filename": "",
             "resumable_chunk_number": -1,
@@ -14,66 +20,87 @@ class FileUploadForm:
             "metadatas": None,
             "container_id": "",
         }
+
     @property
     def to_dict(self):
         return self._attribute_map
+
     @property
     def resumable_identifier(self):
         return self._attribute_map['resumable_identifier']
+
     @resumable_identifier.setter
     def resumable_identifier(self, resumable_identifier):
         self._attribute_map['resumable_identifier'] = resumable_identifier
+
     @property
     def resumable_filename(self):
         return self._attribute_map['resumable_filename']
+
     @resumable_filename.setter
     def resumable_filename(self, resumable_filename):
         self._attribute_map['resumable_filename'] = resumable_filename
+
     @property
     def resumable_chunk_number(self):
         return self._attribute_map['resumable_chunk_number']
+
     @resumable_chunk_number.setter
     def resumable_chunk_number(self, resumable_chunk_number):
         self._attribute_map['resumable_chunk_number'] = resumable_chunk_number
+
     @property
     def resumable_total_chunks(self):
         return self._attribute_map['resumable_total_chunks']
+
     @resumable_total_chunks.setter
     def resumable_total_chunks(self, resumable_total_chunks):
         self._attribute_map['resumable_total_chunks'] = resumable_total_chunks
+
     @property
     def resumable_total_size(self):
         return self._attribute_map['resumable_total_size']
+
     @resumable_total_size.setter
     def resumable_total_size(self, resumable_total_size):
         self._attribute_map['resumable_total_size'] = resumable_total_size
+
     @property
     def tags(self):
         return self._attribute_map['tags']
+
     @tags.setter
     def tags(self, tags):
         self._attribute_map['tags'] = tags
+
     @property
     def generate_id(self):
         return self._attribute_map['generate_id']
+
     @generate_id.setter
     def generate_id(self, generate_id):
         self._attribute_map['generate_id'] = generate_id
+
     @property
     def uploader(self):
         return self._attribute_map['uploader']
+
     @uploader.setter
     def uploader(self, uploader):
         self._attribute_map['uploader'] = uploader
+
     @property
     def metadatas(self):
         return self._attribute_map['metadatas']
+
     @metadatas.setter
     def metadatas(self, metadatas):
         self._attribute_map['metadatas'] = metadatas
+
     @property
     def container_id(self):
         return self._attribute_map['container_id']
+
     @container_id.setter
     def container_id(self, container_id):
         self._attribute_map['container_id'] = container_id
@@ -92,9 +119,18 @@ def file_upload_form_factory(request_form, container_id):
     resumable_total_size = request_form.get(
         'resumableTotalSize', default=-1, type=int)
     # the input might be undefined
-    tags = request_form.get('tags', 'undefined', type=str)
-    if tags == 'undefined':
+    tags = request_form.get('tags', None)
+    _logger.debug(
+        'here is tags before convertion: {}{}'.format(tags, type(tags)))
+
+    if not tags or tags == 'undefined':
         tags = []
+    else:
+        tags = tags.split(',')
+
+    _logger.debug(
+        'here is tags after convertion: {}{}'.format(tags, type(tags)))
+
     generateID = request_form.get('generateID', 'undefined')
     uploader = request_form.get('uploader', '')
     metadatas = {

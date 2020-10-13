@@ -1,14 +1,17 @@
 from flask_restx import Api, Resource, fields
 from flask import request
 from models.api_response import APIResponse, EAPIResponseCode
+import models.fsm_file_upload as fsmfu
 from config import ConfigClass
 import os
 import errno
 import requests
 from services.logger_services.logger_factory_service import SrvLoggerFactory
+import services.file_upload as srv_upload
 from models.api_file_upload_models import file_upload_form_factory
-from flask_jwt import jwt_required
+from flask_jwt import jwt_required, current_identity
 from resources.decorator import check_role
+from resources.get_session_id import get_session_id
 from .namespace import api_file_upload_ns
 from api import module_api
 
@@ -44,6 +47,16 @@ class PreUploadRestful(Resource):
         # get form
         _form = request.form
         file_upload_form = file_upload_form_factory(_form, container_id)
+        # status mgr initiation
+        # init session id
+        session_id_gotten = get_session_id()
+        self._logger.debug('session_id_gotten: {}'.format(session_id_gotten))
+        session_id = session_id_gotten if session_id_gotten else srv_upload.session_id_generator()
+        status_mgr = srv_upload.SrvFileUpStateMgr(
+            session_id,
+            container_id,
+            file_upload_form.resumable_identifier,
+            file_upload_form.resumable_filename)
         self._logger.info(
             'Start Pre Uploading To Container: ' + str(container_id))
         self._logger.info(
@@ -58,6 +71,7 @@ class PreUploadRestful(Resource):
         init_check_res = pre_upload_init_check(
             file_upload_form.container_id, file_upload_form.resumable_filename, self._logger)
         if not init_check_res[0]:
+            status_mgr.go(fsmfu.EState.TERMINATED)
             _res.set_code(init_check_res[1])
             _res.set_error_msg(init_check_res[2])
             return _res.to_dict, _res.code
@@ -72,11 +86,16 @@ class PreUploadRestful(Resource):
                     'Succeed to create temp dir {}'.format(temp_dir))
             res = {
                 "temp_dir": temp_dir,
-                "message": "Succeed"
+                "message": "Succeed",
+                "task_id": file_upload_form.resumable_identifier,
+                "session_id": session_id
             }
             _res.set_code(EAPIResponseCode.success)
             _res.set_result(res)
+            ## update state
+            status_mgr.go(fsmfu.EState.PRE_UPLOADED)
         except OSError as e:
+            status_mgr.go(fsmfu.EState.TERMINATED)
             if e.errno == errno.EEXIST:
                 self._logger.warning(
                     'Folder {} exists. '.format(temp_dir))
@@ -85,6 +104,7 @@ class PreUploadRestful(Resource):
                 _res.set_error_msg(error_msg)
                 _res.set_code(EAPIResponseCode.forbidden)
         except Exception as e:
+            status_mgr.go(fsmfu.EState.TERMINATED)
             self._logger.error(
                 'Failed to create temp dir {}: {}'.format(temp_dir, str(e)))
             error_msg = 'Error when make temp dir' + str(e)
@@ -105,7 +125,7 @@ def pre_upload_init_check(container_id, resumable_filename, _logger):
         _logger.error(
             'neo4j service: {}'.format(res.json()))
         passed = False
-        code = EAPIResponseCode.not_found
+        code = EAPIResponseCode.forbidden
         msg = 'neo4j service: {}'.format(res.json())
 
     datasets = res.json()
@@ -134,12 +154,12 @@ def pre_upload_init_check(container_id, resumable_filename, _logger):
         passed = False
         code = EAPIResponseCode.forbidden
         msg = 'Folder raw does not existed!'
-    # check if the file is already existed
+    # check if the file already exists
     file_path = os.path.join(path, resumable_filename)
     if os.path.isfile(file_path):
         _logger.error(
-            'nfs service: File %s is already existed!' % resumable_filename)
+            'nfs service: File %s already exists!' % resumable_filename)
         passed = False
-        code = EAPIResponseCode.forbidden
-        msg = 'File %s is already existed!' % resumable_filename
+        code = EAPIResponseCode.conflict
+        msg = 'File %s already exists!' % resumable_filename
     return passed, code, msg

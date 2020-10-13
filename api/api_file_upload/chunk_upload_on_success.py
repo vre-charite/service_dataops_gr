@@ -3,7 +3,10 @@ from flask import request
 from models.api_response import APIResponse, EAPIResponseCode
 from models.api_file_upload_models import file_upload_form_factory
 from services.logger_services.logger_factory_service import SrvLoggerFactory
+import services.file_upload as srv_upload
+import models.fsm_file_upload as fsmup
 from resources.utils import generate_chunk_name, fs
+from resources.get_session_id import get_session_id
 from config import ConfigClass
 import requests
 import os
@@ -35,10 +38,21 @@ class ChunkUploadSuccessRestful(Resource):
         self._logger.info('All chunks received, start background task...: ' + str(container_id))
         # init resp
         _res = APIResponse()
+        self._logger.info('ChunkUploadSuccessRestful Request IP: ' + str(request.remote_addr))
         # form
         _form = request.form
         file_upload_form = file_upload_form_factory(_form, container_id)
-        self._logger.info('ChunkUploadSuccessRestful file_upload_form: ' + str(file_upload_form.to_dict))
+        self._logger.debug('ChunkUploadSuccessRestful file_upload_form: ' + str(file_upload_form.to_dict))
+        # init session id
+        session_id_gotten = get_session_id()
+        self._logger.debug('ChunkUploadSuccessRestful session_id_gotten: ' + str(session_id_gotten))
+        session_id = session_id_gotten if session_id_gotten else srv_upload.session_id_generator()
+        self._logger.debug('ChunkUploadSuccessRestful session_id: ' + str(session_id))
+        status_mgr = srv_upload.SrvFileUpStateMgr(
+            session_id,
+            container_id,
+            file_upload_form.resumable_identifier)
+        status_mgr.go(fsmup.EState.CHUNK_UPLOADED)
         # Fetch upload path from neo4j service
         url = ConfigClass.NEO4J_SERVICE + 'nodes/Dataset/node/' + str(container_id)
         res = requests.get(url=url)
@@ -74,13 +88,18 @@ class ChunkUploadSuccessRestful(Resource):
             for x in range(1, file_upload_form.resumable_total_chunks + 1)
         ]
         self._logger.info(chunk_paths)
-        fs().upload_to_nfs.submit_stored(task_id, temp_dir, chunk_paths,
-                                         target_file_name, upload_path, file_upload_form.uploader,
-                                         file_upload_form.tags, file_upload_form.metadatas, path,
-                                         file_upload_form.resumable_total_size)
+        fs().upload_to_nfs.submit_stored(
+            task_id, temp_dir, chunk_paths,
+            target_file_name, upload_path, file_upload_form.uploader,
+            file_upload_form.tags, file_upload_form.metadatas, path,
+            file_upload_form.resumable_total_size,
+            status_mgr
+            )
 
-        result = {'task_id': task_id,
-                  'message': 'All chunks received, task_id is %s' % task_id}
+        result = {
+            'task_id': task_id,
+            'session_id': session_id,
+            'message': 'All chunks received, task_id is %s' % task_id}
         _res.set_code(EAPIResponseCode.success)
         _res.set_result(result)
         return _res.to_dict, _res.code

@@ -6,7 +6,7 @@ from flask import request
 import json
 from .chunk_upload import ChunkUploadRestful
 from .chunk_upload_on_success import ChunkUploadSuccessRestful
-from .check_status import CheckUploadStatusRestful
+from .check_status import CheckUploadStateRestful, CheckUploadStatusRestfulDeprecated
 from .pre_upload import PreUploadRestful
 from .namespace import api_file_upload_ns
 
@@ -20,5 +20,9 @@ class APIFileUpload(metaclass=MetaAPI):
         api_file_upload_ns.add_resource(
             ChunkUploadSuccessRestful, '/containers/<container_id>/on-success')
         api_file_upload_ns.add_resource(
-            CheckUploadStatusRestful, '/containers/<container_id>/status'
+            CheckUploadStatusRestfulDeprecated, '/containers/<container_id>/status'
         )
+        api_file_upload_ns.add_resource(
+            CheckUploadStateRestful, '/containers/<container_id>/upload-state'
+        )
+

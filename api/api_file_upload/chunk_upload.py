@@ -3,7 +3,10 @@ from flask import request
 from models.api_response import APIResponse, EAPIResponseCode
 from models.api_file_upload_models import file_upload_form_factory
 from services.logger_services.logger_factory_service import SrvLoggerFactory
+import services.file_upload as srv_upload
+import models.fsm_file_upload as fsmup
 from resources.utils import generate_chunk_name
+from resources.get_session_id import get_session_id
 import os
 import errno
 from config import ConfigClass
@@ -38,9 +41,18 @@ class ChunkUploadRestful(Resource):
         try:
             # init resp
             _res = APIResponse()
+            # check ip address
+            self._logger.info('ChunkUploadRestful Request IP: ' + str(request.remote_addr))
             # form
             _form = request.form
             file_upload_form = file_upload_form_factory(_form, container_id)
+            # init session id
+            session_id_gotten = get_session_id()
+            session_id = session_id_gotten if session_id_gotten else srv_upload.session_id_generator()
+            status_mgr = srv_upload.SrvFileUpStateMgr(
+                session_id,
+                container_id,
+                file_upload_form.resumable_identifier)
             self._logger.info('Start Uploading Chunks To Container: ' + str(container_id) + "----- Chunk Number: "
                               + str(file_upload_form.resumable_chunk_number))
             self._logger.info(
@@ -60,6 +72,7 @@ class ChunkUploadRestful(Resource):
                     'Failed to save chunk in tmp.')
                 _res.set_code(EAPIResponseCode.forbidden)
                 _res.set_error_msg('Failed to save chunk in tmp' + str(e))
+                status_mgr.go(fsmup.EState.TERMINATED)
             _res.set_result('Succeed.')
             self._logger.info('Succeed: Uploaded Chunks To Container: ' + str(container_id) + "----- Chunk Number: "
                               + str(file_upload_form.resumable_chunk_number))

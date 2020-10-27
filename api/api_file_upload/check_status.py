@@ -89,3 +89,26 @@ class CheckUploadStateRestful(Resource):
         _res.set_code(EAPIResponseCode.success)
 
         return _res.to_dict, _res.code
+
+
+    def delete(self, container_id):
+        '''
+        This method allow to delete file upload status.
+        '''
+        
+        # init resp
+        _res = APIResponse()
+        self._logger.info('CleanUploadStateRestful Request IP: ' + str(request.remote_addr))
+        self._logger.debug(request.headers.__dict__)
+        session_id_gotten = get_session_id()
+        self._logger.debug('session_id_gotten: {}'.format(session_id_gotten))
+
+        result = srv_upload.get_by_session_id(session_id_gotten)
+
+        for record in result:
+            record = json.loads(record)
+            srv_upload.delete_by_session_id(record["key"])
+
+        _res.set_result('Success')
+        _res.set_code(EAPIResponseCode.success)
+        return _res.to_dict, _res.code

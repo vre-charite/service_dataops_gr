@@ -276,6 +276,7 @@ class file_predownload(Resource):
         # just before the download we create the log
         # create entity in atlas
         username = current_identity['username']
+        my_uuid = uuid.uuid4().hex
         post_data = {
             'referredEntities': {},
             'entity': {
@@ -295,11 +296,13 @@ class file_predownload(Resource):
                     'clusterName': None,
                     'isSymlink': False,
                     'group': None,
-                    'uuid': uuid.uuid4().hex,
+                    'uuid': my_uuid,
                     'createTime': time.time(),
                     'downloader': username,
                     'bucketName': container_path,
-                    'fileName': None
+                    'fileName': None,
+                    'qualifiedName': 'nfs_file_download:' + str(container_path) + ':' + str(time.time()) + ':' + my_uuid,
+                    'name': 'nfs_file_download:' + str(container_path) + ':' + str(time.time()) + ':' + my_uuid,
                 },
                 'isIncomplete': False,
                 'status': 'ACTIVE',
@@ -829,7 +832,7 @@ class processedFile(Resource):
     # Deprecated
     def get(self):
         container_id = request.args.get('container_id', None)
-        pipeline = request.args.get('pipeline', None)
+        pipeline = request.args.get('process_pipeline', None)
         if not container_id or not pipeline:
             return {'result': 'query parameter container_id and pipeline are required'}, 403
         # add new query string here for pagination
@@ -877,14 +880,14 @@ class processedFile(Resource):
                         'operator': 'eq'
                     },
                     {
-                        'attributeName': 'pipeline',
+                        'attributeName': 'process_pipeline',
                         'attributeValue': pipeline,
                         'operator': 'eq'
                     }
                 ]
             },
             'tagFilters': None,
-            'attributes': ['generateID', 'upload_status', 'fileName', 'fileSize', 'path', 'pipeline'],
+            'attributes': ['generateID', 'upload_status', 'fileName', 'fileSize', 'path', 'process_pipeline'],
             'limit': page_size,
             'offset': page * page_size,
             # 'query': '"ABC-1234"',
@@ -941,7 +944,7 @@ class processedFile(Resource):
 
         generate_id = post_data.get('generate_id', None)
         raw_file_path = post_data.get('raw_file_path', None)
-        pipeline = post_data.get('pipeline', None)
+        pipeline = post_data.get('process_pipeline', None)
         job_name = post_data.get('job_name', None)
         status = post_data.get('status', None)
 
@@ -1014,7 +1017,7 @@ class processedFile(Resource):
                     'bucketName': bucket_name,
                     'fileName': file_name,
                     'generateID': file_name[0:8],
-                    'pipeline': pipeline,
+                    'process_pipeline': pipeline,
                     'jobName': job_name,
                     'status': status
                 },

@@ -7,6 +7,8 @@ from .folder_api import *
 from .file_api import *
 from .file_copy import FileCopyRestful
 from .file_meta import FileMetaRestful
+from .file_tag import FileTagRestful
+
 
 nfs_entity_ns.add_resource(files, '/containers/<container_id>/files')
 nfs_entity_ns.add_resource(
@@ -26,3 +28,5 @@ nfs_entity_ns.add_resource(
 
 nfs_entity_ns.add_resource(folders, '/folders')
 nfs_entity_ns.add_resource(FileCopyRestful, '/files/copy')
+
+nfs_entity_ns.add_resource(FileTagRestful, '/containers/<container_id>/tags')

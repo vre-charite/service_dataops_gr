@@ -17,7 +17,7 @@ post_model = module_api.model("copy_file_post", {
     'project': fields.String,
     'create_time': fields.Float,
     'generate_id': fields.String,
-    'pipeline': fields.String
+    'process_pipeline': fields.String
 })
 
 
@@ -78,7 +78,7 @@ class FileCopyRestful(Resource):
         size = os.path.getsize(output_path)
         project_code = post_data.get('project', None)
         generate_id = post_data.get('generate_id', None)
-        pipeline = post_data.get('pipeline', None)
+        pipeline = post_data.get('process_pipeline', None)
         create_time = post_data.get('create_time', None)
 
         atlas_data = {
@@ -111,7 +111,7 @@ class FileCopyRestful(Resource):
                     'bucketName': project_code,
                     'fileName': filename,
                     'generateID': generate_id,
-                    'pipeline': pipeline
+                    'process_pipeline': pipeline
                 },
                 'isIncomplete': False,
                 'status': 'ACTIVE',

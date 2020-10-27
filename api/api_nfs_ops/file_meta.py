@@ -87,8 +87,7 @@ class FileMetaRestful(Resource):
         # default order is desceding
         order = request.args.get('order', 'desc')
         order = 'ASCENDING' if order == 'asc' else 'DESCENDING'
-        pipeline = request.args.get('pipeline', None)
-
+        pipeline = request.args.get('process_pipeline', None)
         # new parameter filter
         # the parameter should pass as stringfied json default is "{}"
         # in below will parase out and json loads into dict
@@ -122,7 +121,7 @@ class FileMetaRestful(Resource):
                     'Query parameter container_id and pipeline are required')
                 return _res.to_dict, _res.code
 
-            filter_condition.update({'pipeline': pipeline})
+            filter_condition.update({'process_pipeline': pipeline})
 
         # only project admin/member could access files in vre core
         if entity_type == "nfs_file_cp" and current_identity['project_role'] == 'uploader':

@@ -16,11 +16,25 @@ class SrvAtlasManager(metaclass=MetaService):
         # TODO might add the range condition
         criterion = []
         for x in filter_condition:
-            criterion.append({
-                'attributeName': x,
-                'attributeValue': filter_condition[x],
-                'operator': 'eq'
-            })
+            if x == 'tags':
+                if filter_condition['tags']:
+                    tags_criterion = []  # nested tags filter
+                    for tag in filter_condition['tags']:
+                        tags_criterion.append({
+                            'attributeName': '__labels',
+                            'attributeValue': tag,
+                            'operator': 'contains'
+                        })
+                    criterion.append({
+                        'condition': 'OR',
+                        'criterion': tags_criterion
+                    })
+            else:
+                criterion.append({
+                    'attributeName': x,
+                    'attributeValue': filter_condition[x],
+                    'operator': 'contains'
+                })
 
         post_data = {
             'excludeDeletedEntities': True,
@@ -60,5 +74,15 @@ class SrvAtlasManager(metaclass=MetaService):
                 central = datetime.fromtimestamp(timestamp_int)
                 e['attributes']['createTime'] = central.strftime(
                     '%Y-%m-%d %H:%M:%S')
+
+        return res
+
+    def update_file_label(self, guid, taglist):
+        url = '{}/v1/entity/guid/{}/labels'.format(self.url, guid)
+        res = requests.post(url, json={"labels": taglist}, headers={
+                            'content-type': 'application/json'})
+        if res.status_code != 200:
+            raise Exception("Failed to call altas service.")
+        res = res.json()['result']
 
         return res

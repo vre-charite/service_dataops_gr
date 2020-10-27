@@ -25,6 +25,7 @@ post_model = module_api.model("upload_on_success_post", {
     "generateID": fields.Raw(required=False, example="ZMA-6666", description="Optional String", title="generateID"),
 })
 
+
 class ChunkUploadSuccessRestful(Resource):
     _logger = SrvLoggerFactory('api_file_upload').get_logger()
 
@@ -35,26 +36,32 @@ class ChunkUploadSuccessRestful(Resource):
         '''
         This method allow to create a flask executor to combine chunks uploaded.
         '''
-        self._logger.info('All chunks received, start background task...: ' + str(container_id))
+        self._logger.info(
+            'All chunks received, start background task...: ' + str(container_id))
         # init resp
         _res = APIResponse()
-        self._logger.info('ChunkUploadSuccessRestful Request IP: ' + str(request.remote_addr))
+        self._logger.info(
+            'ChunkUploadSuccessRestful Request IP: ' + str(request.remote_addr))
         # form
         _form = request.form
         file_upload_form = file_upload_form_factory(_form, container_id)
-        self._logger.debug('ChunkUploadSuccessRestful file_upload_form: ' + str(file_upload_form.to_dict))
+        self._logger.debug(
+            'ChunkUploadSuccessRestful file_upload_form: ' + str(file_upload_form.to_dict))
         # init session id
         session_id_gotten = get_session_id()
-        self._logger.debug('ChunkUploadSuccessRestful session_id_gotten: ' + str(session_id_gotten))
+        self._logger.debug(
+            'ChunkUploadSuccessRestful session_id_gotten: ' + str(session_id_gotten))
         session_id = session_id_gotten if session_id_gotten else srv_upload.session_id_generator()
-        self._logger.debug('ChunkUploadSuccessRestful session_id: ' + str(session_id))
+        self._logger.debug(
+            'ChunkUploadSuccessRestful session_id: ' + str(session_id))
         status_mgr = srv_upload.SrvFileUpStateMgr(
             session_id,
             container_id,
             file_upload_form.resumable_identifier)
         status_mgr.go(fsmup.EState.CHUNK_UPLOADED)
         # Fetch upload path from neo4j service
-        url = ConfigClass.NEO4J_SERVICE + 'nodes/Dataset/node/' + str(container_id)
+        url = ConfigClass.NEO4J_SERVICE + \
+            'nodes/Dataset/node/' + str(container_id)
         res = requests.get(url=url)
         datasets = res.json()
         temp_dir = os.path.join(
@@ -72,7 +79,8 @@ class ChunkUploadSuccessRestful(Resource):
             path,  # root path
             "raw")
         self._logger.info('File will be uploaded to %s' % upload_path)
-        self._logger.info("file_upload_form.resumable_filename: " + file_upload_form.resumable_filename)
+        self._logger.info("file_upload_form.resumable_filename: " +
+                          file_upload_form.resumable_filename)
         target_file_name = os.path.join(
             temp_dir, file_upload_form.resumable_filename)
         self._logger.info("target_file_name: " + target_file_name)
@@ -93,8 +101,8 @@ class ChunkUploadSuccessRestful(Resource):
             target_file_name, upload_path, file_upload_form.uploader,
             file_upload_form.tags, file_upload_form.metadatas, path,
             file_upload_form.resumable_total_size,
-            status_mgr
-            )
+            status_mgr, container_id
+        )
 
         result = {
             'task_id': task_id,

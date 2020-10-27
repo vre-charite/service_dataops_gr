@@ -1,9 +1,4 @@
 import copy
-import ast
-from services.logger_services.logger_factory_service import SrvLoggerFactory
-
-
-_logger = SrvLoggerFactory('api_file_tag').get_logger()
 
 
 class FileUploadForm:
@@ -118,19 +113,6 @@ def file_upload_form_factory(request_form, container_id):
         'resumableTotalChunks', default=-1, type=int)
     resumable_total_size = request_form.get(
         'resumableTotalSize', default=-1, type=int)
-    # the input might be undefined
-    tags = request_form.get('tags', None)
-    _logger.debug(
-        'here is tags before convertion: {}{}'.format(tags, type(tags)))
-
-    if not tags or tags == 'undefined':
-        tags = []
-    else:
-        tags = tags.split(',')
-
-    _logger.debug(
-        'here is tags after convertion: {}{}'.format(tags, type(tags)))
-
     generateID = request_form.get('generateID', 'undefined')
     uploader = request_form.get('uploader', '')
     metadatas = {
@@ -139,6 +121,13 @@ def file_upload_form_factory(request_form, container_id):
     # For Generate project, add generate id as prefix
     if generateID and generateID != 'undefined':
         resumable_filename = generateID + '_' + resumable_filename
+
+    # the input might be undefined
+    tags = request_form.get('tags', None)
+    if not tags or tags == 'undefined':
+        tags = []
+    else:
+        tags = tags.split(',')
 
     my_form = FileUploadForm()
     my_form.container_id = container_id

@@ -13,6 +13,7 @@ from flask import current_app
 import datetime
 import services.file_upload as srv_upload
 import models.fsm_file_upload as fsmup
+from services.tags_services.tags_manager import SrvTagsMgr
 
 
 class fs(object):
@@ -22,7 +23,7 @@ class fs(object):
     @executor.job
     def upload_to_nfs(temp_dir, chunk_paths, target_file_name,
                       upload_path, uploader, tags, metadatas, bucket_name, size,
-                      status_mgr: srv_upload.SrvFileUpStateMgr):
+                      status_mgr: srv_upload.SrvFileUpStateMgr, container_id):
         # Upload task to combine file chunks and upload to nfs
         already_moved = False
         try:
@@ -87,7 +88,7 @@ class fs(object):
 
         try:
             current_app.logger.debug(
-                'create atlas record but tags {} in format {}'.format(tags, type(tags)))
+                'create atlas record but tags {} in format {}'.format(tags, file_name))
             # create entity in atlas
             post_data = {
                 'referredEntities': {},
@@ -101,7 +102,7 @@ class fs(object):
                         'isFile': False,
                         'numberOfReplicas': 0,
                         'replicatedFrom': None,
-                        'qualifiedName': file_name,
+                        'qualifiedName': upload_path+'/'+file_name,
                         'displayName': None,
                         'description': None,
                         'extendedAttributes': None,
@@ -137,12 +138,22 @@ class fs(object):
                                 json=post_data, headers={'content-type': 'application/json'})
             if res.status_code != 200:
                 raise Exception(res.text)
+
         except Exception as e:
             current_app.logger.error(
                 'create atlas record but {}'.format(str(e)))
             return False, 'Create atlas record but %s' % str(e)
-
         current_app.logger.info('done with creating atlas record')
+
+        try:
+            # update tag frequence in redis
+            for tag in tags:
+                SrvTagsMgr().add_freq(container_id, tag)
+        except Exception as e:
+            current_app.logger.error(
+                'add tag in redis but {}'.format(str(e)))
+            return False, 'Add tags in redis but %s' % str(e)
+
         status_mgr.go(fsmup.EState.FINALIZED)
         try:
             # clean up tmp folder

@@ -15,12 +15,12 @@ class ConfigClass(object):
     DOWNLOAD_KEY = 'indoc101'
 
     # Neo4j Service
-    # NEO4J_SERVICE = "http://0.0.0.0:5062/v1/neo4j/"  # Local
+    # NEO4J_SERVICE = "http://10.3.7.216:5062/v1/neo4j/"  # Local
     NEO4J_SERVICE = "http://neo4j.utility:5062/v1/neo4j/"  # Server
 
     # Metadata service
+    # METADATA_API = "http://10.3.7.237:5064"  # Local
     METADATA_API = "http://cataloguing.utility:5064"  # Server
-    # METADATA_API = "http://localhost:5064"
 
     # Redis Service
     REDIS_HOST = "redis-master.utility"

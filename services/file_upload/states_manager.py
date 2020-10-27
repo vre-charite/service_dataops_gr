@@ -202,6 +202,11 @@ def get_by_session_id(session_id):
     res_binary = srv_redis.mget_by_prefix(session_id)
     return [record.decode('utf-8') for record in res_binary] if res_binary else []
 
+def delete_by_session_id(session_id):
+    srv_redis = SrvRedisSingleton()
+    srv_redis.delete_by_key(session_id)
+    return True
+
 def session_id_generator():
     today = datetime.date.today()
     return 'UPLOAD{}{}'.format(current_identity['user_id'], today.strftime("%d%m%Y"))

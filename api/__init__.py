@@ -3,17 +3,16 @@ from .module_api import module_api
 ## old apis
 nfs_entity_ns = module_api.namespace(
     'NFS Data Operation', description='Operation on NFS', path='/v1')
-minio_entity_ns = module_api.namespace(
-    'MiniO Data Operation', description='Operation on MiniO', path='/v1/minio')
 
-from .api_minio_ops import *
 from .api_nfs_ops import *
 
 ## apis refactoring
 from .api_file_upload.api_registry import APIFileUpload
+from .api_lineage_showcase.api_registry import APILineageShowcase
 
 apis = [
-    APIFileUpload()
+    APIFileUpload(),
+    APILineageShowcase()
 ]
 
 def api_registry(apis):

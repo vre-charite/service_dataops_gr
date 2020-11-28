@@ -3,9 +3,7 @@ from config import ConfigClass
 import os
 import time
 import shutil
-from minio import Minio
-from minio.error import (ResponseError, BucketAlreadyOwnedByYou,
-                         BucketAlreadyExists)
+
 import pika
 import json
 import requests
@@ -55,6 +53,7 @@ class fs(object):
             if not already_moved:
                 project_code = bucket_name
                 input_path = upload_path + '/' + file_name
+                # timezone_dt = datetime.datetime.now(datetime.timezone.utc)
                 payload = {
                     "event_type": "data_uploaded",
                     "payload": {
@@ -90,6 +89,7 @@ class fs(object):
             current_app.logger.debug(
                 'create atlas record but tags {} in format {}'.format(tags, file_name))
             # create entity in atlas
+            timezone_dt = datetime.datetime.now(datetime.timezone.utc)
             post_data = {
                 'referredEntities': {},
                 'entity': {

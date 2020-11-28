@@ -8,9 +8,9 @@ from .file_api import *
 from .file_copy import FileCopyRestful
 from .file_meta import FileMetaRestful
 from .file_tag import FileTagRestful
+from .file_process import FileProcessOnCreate
 
 
-nfs_entity_ns.add_resource(files, '/containers/<container_id>/files')
 nfs_entity_ns.add_resource(
     totalFileCount, '/containers/<container_id>/files/count/total')
 nfs_entity_ns.add_resource(
@@ -23,10 +23,12 @@ nfs_entity_ns.add_resource(
     FileMetaRestful, '/containers/<container_id>/files/meta')
 nfs_entity_ns.add_resource(processedFile, '/files/processed')
 # nfs_entity_ns.add_resource(fileInfo, '/containers/<container_id>/files/meta')
-nfs_entity_ns.add_resource(
-    fileExistCheck, '/containers/<container_id>/files/exist')
 
 nfs_entity_ns.add_resource(folders, '/folders')
 nfs_entity_ns.add_resource(FileCopyRestful, '/files/copy')
 
 nfs_entity_ns.add_resource(FileTagRestful, '/containers/<container_id>/tags')
+
+nfs_entity_ns.add_resource(FileProcessOnCreate, '/containers/<container_id>/files/process/on-create')
+
+nfs_entity_ns.add_resource(file_download_checker, '/download-state')

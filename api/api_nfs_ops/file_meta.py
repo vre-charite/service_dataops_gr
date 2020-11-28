@@ -147,6 +147,7 @@ class FileMetaRestful(Resource):
             return _res.to_dict, _res.code
 
         filter_condition.update({'bucketName': container_path})
+        self._logger.debug('Container Path: ' + container_path)
 
         # query metadata
         try:

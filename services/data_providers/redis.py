@@ -1,6 +1,7 @@
 from models.service_meta_class import MetaService
 from redis import StrictRedis
 from config import ConfigClass
+from enum import Enum
 
 class SrvRedisSingleton(metaclass=MetaService):
 
@@ -43,3 +44,15 @@ class SrvRedisSingleton(metaclass=MetaService):
         query_string = '{}:*{}*'.format(key, pattern)
         keys = self.__instance.keys(query_string)
         return self.__instance.mget(keys)
+
+    def publish(self, channel, data):
+        res = self.__instance.publish(channel, data)
+        return res
+    
+    def subscriber(self, channel):
+        p = self.__instance.pubsub()
+        p.subscribe(channel)
+        return p
+
+class ERedisChannels(Enum):
+    pipeline_process_start = 0

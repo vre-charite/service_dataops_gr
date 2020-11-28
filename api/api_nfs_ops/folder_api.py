@@ -113,6 +113,8 @@ class folders(Resource):
             vre_folders = fs().list_folder(vre_full_path, field)
 
         except Exception as e:
+            if str(e) == 'Path to folder does not exist.':
+                return {'Error': str(e)}, 404
             return {'Error': str(e)}, 403
 
         return {'result': {'gr': gr_folders, 'vre': vre_folders}}, 200

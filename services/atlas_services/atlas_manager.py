@@ -2,7 +2,7 @@ import requests
 import json
 from models.service_meta_class import MetaService
 from config import ConfigClass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class SrvAtlasManager(metaclass=MetaService):
@@ -29,6 +29,12 @@ class SrvAtlasManager(metaclass=MetaService):
                         'condition': 'OR',
                         'criterion': tags_criterion
                     })
+            elif x == 'bucketName':
+                criterion.append({
+                    'attributeName': x,
+                    'attributeValue': filter_condition[x],
+                    'operator': 'eq'
+                })
             else:
                 criterion.append({
                     'attributeName': x,
@@ -71,7 +77,7 @@ class SrvAtlasManager(metaclass=MetaService):
             timestamp_int = e['attributes'].get('createTime', None)
             # print(timestamp_int)
             if timestamp_int:
-                central = datetime.fromtimestamp(timestamp_int)
+                central = datetime.fromtimestamp(timestamp_int,tz=timezone.utc)
                 e['attributes']['createTime'] = central.strftime(
                     '%Y-%m-%d %H:%M:%S')
 

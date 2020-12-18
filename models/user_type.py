@@ -3,9 +3,10 @@ from enum import Enum
 class EUserRole(Enum):
     site_admin = -1
     admin = 0
-    member = 1
-    contributor = 2
-    visitor = 3
+    collaborator = 1
+    member = 2
+    contributor = 3
+    visitor = 4
 
 def map_role_front_to_sys(role: str):
     '''
@@ -17,7 +18,8 @@ def map_role_front_to_sys(role: str):
         'member': EUserRole.member,
         'contributor': EUserRole.contributor,
         'uploader': EUserRole.contributor,
-        'visitor': EUserRole.visitor
+        'visitor': EUserRole.visitor,
+        'collaborator': EUserRole.collaborator
     }.get(role, None)
 
 def map_role_sys_to_front(role: EUserRole):
@@ -29,7 +31,8 @@ def map_role_sys_to_front(role: EUserRole):
         EUserRole.admin: 'admin',
         EUserRole.member: 'member',
         EUserRole.contributor: 'contributor',
-        EUserRole.visitor: 'visitor'
+        EUserRole.visitor: 'visitor',
+        EUserRole.collaborator: 'collaborator'
     }.get(role, None)
 
 def map_role_neo4j_to_sys(role: int):
@@ -38,5 +41,6 @@ def map_role_neo4j_to_sys(role: int):
         'member': EUserRole.member,
         'uploader': EUserRole.contributor,
         'contributor': EUserRole.contributor,
-        'visitor': EUserRole.visitor
+        'visitor': EUserRole.visitor,
+        'collaborator': EUserRole.collaborator
     }.get(role, None)

@@ -74,51 +74,51 @@ class file_predownload(Resource):
         # create entity in atlas
         username = current_identity['username']
         my_uuid = uuid.uuid4().hex
-        post_data = {
-            'referredEntities': {},
-            'entity': {
-                'typeName': 'nfs_file_download',
-                'attributes': {
-                    'modifiedTime': 0,
-                    'replicatedTo': None,
-                    'userDescription': None,
-                    'isFile': False,
-                    'numberOfReplicas': 0,
-                    'replicatedFrom': None,
-                    'displayName': None,
-                    'description': None,
-                    'extendedAttributes': None,
-                    'nameServiceId': None,
-                    'posixPermissions': None,
-                    'clusterName': None,
-                    'isSymlink': False,
-                    'group': None,
-                    'uuid': my_uuid,
-                    'createTime': time.time(),
-                    'downloader': username,
-                    'bucketName': container_path,
-                    'fileName': None,
-                    'qualifiedName': 'nfs_file_download:' + str(container_path) + ':' + str(time.time()) + ':' + my_uuid,
-                    'name': 'nfs_file_download:' + str(container_path) + ':' + str(time.time()) + ':' + my_uuid,
-                },
-                'isIncomplete': False,
-                'status': 'ACTIVE',
-                'createdBy': 'admin',
-                'version': 0,
-                'relationshipAttributes': {
-                    'schema': [],
-                    'inputToProcesses': [],
-                    'meanings': [],
-                    'outputFromProcesses': []
-                },
-                'customAttributes': {},
-                'labels': []
-            }
-        }
 
         # loop over each file to download
         for f in files:
             try:
+                post_data = {
+                    'referredEntities': {},
+                    'entity': {
+                        'typeName': 'nfs_file_download',
+                        'attributes': {
+                            'modifiedTime': 0,
+                            'replicatedTo': None,
+                            'userDescription': None,
+                            'isFile': False,
+                            'numberOfReplicas': 0,
+                            'replicatedFrom': None,
+                            'displayName': None,
+                            'description': None,
+                            'extendedAttributes': None,
+                            'nameServiceId': None,
+                            'posixPermissions': None,
+                            'clusterName': None,
+                            'isSymlink': False,
+                            'group': None,
+                            'uuid': my_uuid,
+                            'createTime': time.time(),
+                            'downloader': username,
+                            'bucketName': container_path,
+                            'fileName': None,
+                            'qualifiedName': 'nfs_file_download:' + str(container_path) + ':' + str(time.time()) + ':' + my_uuid,
+                            'name': 'nfs_file_download:' + str(container_path) + ':' + str(time.time()) + ':' + my_uuid,
+                        },
+                        'isIncomplete': False,
+                        'status': 'ACTIVE',
+                        'createdBy': 'admin',
+                        'version': 0,
+                        'relationshipAttributes': {
+                            'schema': [],
+                            'inputToProcesses': [],
+                            'meanings': [],
+                            'outputFromProcesses': []
+                        },
+                        'customAttributes': {},
+                        'labels': []
+                    }
+                }
                 post_data['entity']['attributes']['fileName'] = f['file']
                 res = requests.post(ConfigClass.METADATA_API+'/v1/entity',
                                     json=post_data, headers={'content-type': 'application/json'})
@@ -442,44 +442,45 @@ class processedFile(Resource):
         job_name = post_data.get('job_name', None)
         status = post_data.get('status', None)
 
-        owner = None
-        # first try to get the owner
-        post_data = {
-            'excludeDeletedEntities': True,
-            'includeSubClassifications': False,
-            'includeSubTypes': False,
-            'includeClassificationAttributes': False,
-            'entityFilters': {
-                'attributeName': 'name',
-                'attributeValue': raw_file_path,
-                'operator': 'eq'
-            },
-            'tagFilters': None,
-            'attributes': ['generateID', 'fileName', 'fileSize', 'path'],
-            'limit': 1,
-            'offset': 0,
-            'typeName': 'nfs_file',
-            'classification': None,
-            'termName': None
-        }
+        owner = post_data.get('owner', None)
 
-        try:
-            res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
-                                json=post_data, headers={'content-type': 'application/json'})
-            if res.status_code != 200:
-                return {'result': res.json()}, 403
-            res = res.json()['result']
-            # print(res)
-            # try to get the entities
-            entities = res.get('entities', [])
-            if len(entities) == 0:
-                raise Exception(
-                    "the raw file does not exist please check your path")
-            # else pick the owner
-            owner = entities[0]['attributes']['owner']
+        if not owner:
+            try:
+                # first try to get the owner
+                post_data = {
+                    'excludeDeletedEntities': True,
+                    'includeSubClassifications': False,
+                    'includeSubTypes': False,
+                    'includeClassificationAttributes': False,
+                    'entityFilters': {
+                        'attributeName': 'name',
+                        'attributeValue': raw_file_path,
+                        'operator': 'eq'
+                    },
+                    'tagFilters': None,
+                    'attributes': ['generateID', 'fileName', 'fileSize', 'path'],
+                    'limit': 1,
+                    'offset': 0,
+                    'typeName': 'nfs_file',
+                    'classification': None,
+                    'termName': None
+                }
+                res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
+                                    json=post_data, headers={'content-type': 'application/json'})
+                if res.status_code != 200:
+                    return {'result': res.json()}, 403
+                res = res.json()['result']
+                # print(res)
+                # try to get the entities
+                entities = res.get('entities', [])
+                if len(entities) == 0:
+                    raise Exception(
+                        "owner can not be found for: " + file_name)
+                # else pick the owner
+                owner = entities[0]['attributes']['owner']
 
-        except Exception as e:
-            return {'result': str(e)}, 403
+            except Exception as e:
+                return {'result': str(e)}, 403
 
         # create entity in atlas
         post_data = {
@@ -494,7 +495,7 @@ class processedFile(Resource):
                     'isFile': False,
                     'numberOfReplicas': 0,
                     'replicatedFrom': None,
-                    'qualifiedName': file_name,
+                    'qualifiedName': path,
                     'displayName': None,
                     'description': None,
                     'extendedAttributes': None,
@@ -537,41 +538,6 @@ class processedFile(Resource):
                 return res.json(), res.status_code
         except Exception as e:
             return str(e), 403
-
-        # # use the name to create the relationship
-        # post_data = {
-        #     "createTime": int(time.time()),
-        #     "createdBy": "admin",
-        #     "end1": {
-        #         "typeName": "nfs_file_processed",
-        #         "uniqueAttributes": {
-        #             "name": path
-        #         }
-        #     },
-        #     "end2": {
-        #         "typeName": "nfs_file",
-        #         "uniqueAttributes": {
-        #             "name": raw_file_path
-        #         }
-        #     },
-        #     "propagateTags": "NONE",
-        #     "label": "vre_pipeline",
-        #     "status": "ACTIVE",
-        #     "provenanceType": 1,
-        #     "updateTime": int(time.time()),
-        #     "updatedBy": "admin",
-        #     "version": 1,
-        #     "typeName": "vre_pipeline"
-        # }
-        # try:
-        #     res = requests.post(ConfigClass.METADATA_API+'/v1/relation',
-        #                         json=post_data, headers={'content-type': 'application/json'})
-        #     print(res.text)
-        #     if res.status_code != 200:
-        #         return res.text, res.status_code
-        # except Exception as e:
-        #     print(e)
-        #     return str(e), 403
 
         return res.json(), 200
 

@@ -8,6 +8,7 @@ from resources.decorator import check_role
 from models.api_response import APIResponse, EAPIResponseCode
 from services.logger_services.logger_factory_service import SrvLoggerFactory
 import json
+from config import ConfigClass
 
 query_sample_return = '''
     {
@@ -70,7 +71,6 @@ class FileMetaRestful(Resource):
     @jwt_required()
     @check_role("uploader")
     def get(self, container_id):
-
         # init resp
         _res = APIResponse()
 
@@ -80,7 +80,7 @@ class FileMetaRestful(Resource):
         page_size = int(request.args.get('page_size', default_page_size))
         # note here the offset is page_size * page
         page = int(request.args.get('page', 0))
-        # use the stage variable to indicate entity type
+        # use the entity_type variable to indicate entity type
         entity_type = request.args.get('entity_type', 'nfs_file')
         # also add new query string for sorting the column default is time
         sorting = request.args.get('column', 'createTime')
@@ -88,6 +88,8 @@ class FileMetaRestful(Resource):
         order = request.args.get('order', 'desc')
         order = 'ASCENDING' if order == 'asc' else 'DESCENDING'
         pipeline = request.args.get('process_pipeline', None)
+        namespace = request.args.get('namespace', None)
+        relevant_path = request.args.get('relevant_path', None)
         # new parameter filter
         # the parameter should pass as stringfied json default is "{}"
         # in below will parase out and json loads into dict
@@ -131,14 +133,17 @@ class FileMetaRestful(Resource):
             _res.set_error_msg('Permission Deined')
             return _res.to_dict, _res.code
 
+        project_code = None
+
         # fetch project path
         try:
             res = SrvContainerManager().fetch_container_by_id(container_id)
             if len(res) == 0:
                 return {'result': 'Container does not exist.'}, 404
             container_path = res[0]['path']
-            if not container_path:
-                return {'result': 'Cannot find the path attribute.'}, 403
+            project_code = res[0]['code']
+            if not container_path or not project_code:
+                return {'result': 'Cannot find the path attribute or project_code.'}, 403
         except Exception as e:
             self._logger.error(
                 'Failed to query neo4j: ' + str(e))
@@ -149,10 +154,20 @@ class FileMetaRestful(Resource):
         filter_condition.update({'bucketName': container_path})
         self._logger.debug('Container Path: ' + container_path)
 
+        if namespace and relevant_path:
+            namespace_path = {
+                'greenroom': ConfigClass.NFS_ROOT_PATH,
+                'vrecore': ConfigClass.VRE_ROOT_PATH
+            }.get(namespace)
+            absolute_path = "{}/{}/{}".format(namespace_path, project_code, relevant_path)
+            filter_condition.update({'name': absolute_path})
+
+        self._logger.debug(str(filter_condition))
+
         # query metadata
         try:
             res = SrvAtlasManager().query_file_meta(container_id, filter_condition,
-                                                    page_size, page, sorting, order, entity_type)
+                                                    page_size, page, sorting, order, entity_type, current_identity['project_role'])
         except Exception as e:
             self._logger.error(
                 'Failed to query file metadata: ' + str(e))

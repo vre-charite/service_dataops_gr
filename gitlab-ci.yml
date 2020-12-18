@@ -1,0 +1,58 @@
+image: docker:latest
+
+variables:
+  REGISTRY_DEV: 10.3.7.221:5000
+  REGISTRY_STAGING: 10.3.7.241:5000
+  CONTAINER_IMAGE_DEV: ${REGISTRY_DEV}/dataops-gr:${CI_COMMIT_SHORT_SHA}
+  CONTAINER_IMAGE_STAGING: ${REGISTRY_STAGING}/dataops-gr:${CI_COMMIT_SHORT_SHA}
+
+dev-build:
+  stage: build
+  tags:
+    - deployment
+  only:
+    refs:
+      - k8s-dev
+  script:
+    - docker login ${REGISTRY_DEV} -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+    - docker build -t ${CONTAINER_IMAGE_DEV} .
+    - docker push ${CONTAINER_IMAGE_DEV}
+
+dev-deploy:
+  stage: deploy
+  tags:
+    - deployment
+  only:
+    refs:
+      - k8s-dev
+  image: dtzar/helm-kubectl
+  script:
+    - sed -i "s/<VERSION>/${CI_COMMIT_SHORT_SHA}/g" kubernetes/dev-deployment.yaml
+    - kubectl config use-context dev
+    - kubectl apply -f kubernetes/dev-deployment.yaml
+
+
+staging-build:
+  stage: build
+  tags:
+    - deployment
+  only:
+    refs:
+      - k8s-staging
+  script:
+    - docker login ${REGISTRY_STAGING} -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+    - docker build -t ${CONTAINER_IMAGE_STAGING} .
+    - docker push ${CONTAINER_IMAGE_STAGING}
+
+staging-deploy:
+  stage: deploy
+  tags:
+    - deployment
+  only:
+    refs:
+      - k8s-staging
+  image: dtzar/helm-kubectl
+  script:
+    - sed -i "s/<VERSION>/${CI_COMMIT_SHORT_SHA}/g" kubernetes/staging-deployment.yaml
+    - kubectl config use-context staging
+    - kubectl apply -f kubernetes/staging-deployment.yaml

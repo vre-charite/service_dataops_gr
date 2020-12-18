@@ -55,7 +55,7 @@ def check_role(required_role, parent=None):
                         "Unauthorized: Relation does not exist.")
             except Exception as e:
                 return {'result': 'Permission Denied'}, 401
-
+            
             for item in relations:
                 r = item["r"]["type"]
                 role_neo4j_mapped = map_role_neo4j_to_sys(r)
@@ -86,3 +86,21 @@ def check_user():
 
         return wrapper
     return inner_function
+
+
+def check_folder_permissions(function):
+    def wrapper(*args, **kwargs):
+        folder_id = kwargs.get('folder_id', None)
+        url = ConfigClass.NEO4J_SERVICE + "relations"
+        params = {"start_id": current_identity["user_id"], "end_id": folder_id}
+        res = requests.get(url=url, params=params)
+        if(res.status_code != 200):
+            raise Exception("Unauthorized: " + json.loads(res.text))
+        relations = json.loads(res.text)
+        print(relations)
+        if relations[0]['r']['type'] == 'owner':
+            return function(*args, **kwargs)
+        else:
+            raise Exception("Unauthorized: " + json.loads(res.text))
+    return wrapper
+

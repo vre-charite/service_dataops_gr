@@ -1,6 +1,6 @@
 from flask import request, current_app
 from flask_restful import Resource
-from flask_jwt import jwt_required
+from flask_jwt import jwt_required, current_identity
 from resources.utils import fs
 from urllib.parse import unquote
 import os
@@ -9,6 +9,7 @@ import requests
 import json
 from flask_restx import Api, Resource
 from api import nfs_entity_ns
+from itertools import product
 
 from resources.swagger_modules import folder, success_return, folder_return
 from resources.decorator import check_role
@@ -79,7 +80,7 @@ class folders(Resource):
         # Get folder path from args, decode utf-8
         container_id = request.args.get('container_id', None)
         container_path = ""
-
+        system_folder = ['workdir','logs','trash']
         # Fetch upload path from neo4j service
         if(container_id is not None):
             try:
@@ -101,15 +102,22 @@ class folders(Resource):
         sub_path = unquote(request.args.get('path', ''))
         gr_full_path = os.path.join(
             ConfigClass.NFS_ROOT_PATH, container_path, sub_path)
+
+        if current_identity['project_role'] == 'collaborator':
+            gr_full_path = os.path.join(
+                ConfigClass.NFS_ROOT_PATH, container_path, 'raw')
+       
         vre_full_path = os.path.join(
             ConfigClass.VRE_ROOT_PATH, container_path, sub_path)
-
         # Specify the output field: file/folder/both
         field = request.args.get('field', None)
 
         # Recusive Fetch folder list
         try:
-            gr_folders = fs().list_folder(gr_full_path, field)
+            gr_folders = fs().list_folder(gr_full_path, field)          
+            for folder, unused_folder in product(gr_folders, system_folder):
+                if unused_folder in folder:
+                    gr_folders.remove(folder)
             vre_folders = fs().list_folder(vre_full_path, field)
 
         except Exception as e:

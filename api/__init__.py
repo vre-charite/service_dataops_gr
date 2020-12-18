@@ -9,10 +9,14 @@ from .api_nfs_ops import *
 ## apis refactoring
 from .api_file_upload.api_registry import APIFileUpload
 from .api_lineage_showcase.api_registry import APILineageShowcase
+from .api_file_actions.api_registry import APIFileTransfer
+from .api_virtual_folder.api_registry import APIVirtualFolder
 
 apis = [
     APIFileUpload(),
-    APILineageShowcase()
+    APILineageShowcase(),
+    APIFileTransfer(),
+    APIVirtualFolder(),
 ]
 
 def api_registry(apis):

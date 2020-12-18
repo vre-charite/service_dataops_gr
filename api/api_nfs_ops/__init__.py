@@ -9,6 +9,7 @@ from .file_copy import FileCopyRestful
 from .file_meta import FileMetaRestful
 from .file_tag import FileTagRestful
 from .file_process import FileProcessOnCreate
+from .data_tag import DataTagRestful
 
 
 nfs_entity_ns.add_resource(
@@ -28,6 +29,8 @@ nfs_entity_ns.add_resource(folders, '/folders')
 nfs_entity_ns.add_resource(FileCopyRestful, '/files/copy')
 
 nfs_entity_ns.add_resource(FileTagRestful, '/containers/<container_id>/tags')
+
+nfs_entity_ns.add_resource(DataTagRestful, '/data/tags')
 
 nfs_entity_ns.add_resource(FileProcessOnCreate, '/containers/<container_id>/files/process/on-create')
 

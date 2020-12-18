@@ -9,7 +9,7 @@ class SrvAtlasManager(metaclass=MetaService):
     def __init__(self):
         self.url = ConfigClass.METADATA_API
 
-    def query_file_meta(self, container_id, filter_condition, page_size, page, sorting, order, entity_type):
+    def query_file_meta(self, container_id, filter_condition, page_size, page, sorting, order, entity_type, container_role):
 
         # based on the filtering condition
         # loop over the json to add the equal constaint
@@ -33,6 +33,12 @@ class SrvAtlasManager(metaclass=MetaService):
                 criterion.append({
                     'attributeName': x,
                     'attributeValue': filter_condition[x],
+                    'operator': 'eq'
+                })
+            elif container_role != 'admin' and x == 'owner':
+                criterion.append({
+                    'attributeName': 'owner',
+                    'attributeValue': filter_condition['owner'],
                     'operator': 'eq'
                 })
             else:

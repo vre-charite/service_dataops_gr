@@ -79,6 +79,8 @@ class ActionsQueryRestful(Resource):
             generate_id = req_content.get('generate_id', None)
             process_pipeline = req_content.get('process_pipeline', None)
 
+            _logger.info("create entity body: " + str(operation_type), str(owner), str(operator), str(input_file_path), str(output_file_path), str(file_size), str(project_code), str(generate_id), str(process_pipeline))
+
             add(operation_type, owner, operator, input_file_path, output_file_path, file_size, project_code, generate_id, process_pipeline)
 
             _res.set_code(EAPIResponseCode.success)

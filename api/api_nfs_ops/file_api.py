@@ -887,3 +887,9 @@ class dailyFileCount(Resource):
 
         return {'result': {'recent_upload': upload_log, 'upload_count': upload_count,
                            'recent_download': download_log, 'download_count': download_count}}, 200
+
+class FileExists(Resource):
+    def post(self):
+        post_data = request.get_json()
+        full_path = post_data.get('full_path', None)
+        return {"result": os.path.isfile(full_path)}, 200

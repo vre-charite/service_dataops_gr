@@ -9,8 +9,8 @@ class SrvAtlasManager(metaclass=MetaService):
     def __init__(self):
         self.url = ConfigClass.METADATA_API
 
-    def query_file_meta(self, container_id, filter_condition, page_size, page, sorting, order, entity_type, container_role):
-
+    def query_file_meta(self, container_id, filter_condition, page_size, page, sorting, order, entity_type, container_role, username=None):
+        print(self, container_id, filter_condition, page_size, page, sorting, order, entity_type, container_role, username)
         # based on the filtering condition
         # loop over the json to add the equal constaint
         # TODO might add the range condition
@@ -35,6 +35,20 @@ class SrvAtlasManager(metaclass=MetaService):
                     'attributeValue': filter_condition[x],
                     'operator': 'eq'
                 })
+            elif x == 'fileName':
+                if 'name' in filter_condition:
+                    if 'TRASH' in filter_condition['name']:
+                        criterion.append({
+                            'attributeName': 'file_name',
+                            'attributeValue': filter_condition[x],
+                            'operator': 'contains'
+                        })
+                    else:
+                        criterion.append({
+                            'attributeName': x,
+                            'attributeValue': filter_condition[x],
+                            'operator': 'contains'
+                        })
             elif container_role != 'admin' and x == 'owner':
                 criterion.append({
                     'attributeName': 'owner',
@@ -48,6 +62,32 @@ class SrvAtlasManager(metaclass=MetaService):
                     'operator': 'contains'
                 })
 
+            ## filter archived data
+            criterion.append({
+                'attributeName': "__customAttributes",
+                'attributeValue': "archived",
+                'operator': "NOT_CONTAINS"
+            })
+        
+        if 'owner' not in filter_condition and container_role != 'admin':
+            if 'name' in filter_condition:
+                if 'TRASH' in filter_condition['name']:
+                    operator_criterion = []
+                    operator_criterion.append({
+                        'attributeName': 'operator',
+                        'attributeValue': username,
+                        'operator': 'eq'
+                    })
+                    operator_criterion.append({
+                        'attributeName': 'operator_role',
+                        'attributeValue': 'admin',
+                        'operator': 'eq'
+                    })
+                    criterion.append({
+                        'condition': 'OR',
+                        'criterion': operator_criterion
+                    })
+
         post_data = {
             'excludeDeletedEntities': True,
             'includeSubClassifications': False,
@@ -58,7 +98,7 @@ class SrvAtlasManager(metaclass=MetaService):
                 "criterion": criterion
             },
             'tagFilters': None,
-            'attributes': ['generateID', 'fileName', 'fileSize', 'path'],
+            'attributes': ['generateID', 'fileName', 'fileSize', 'path', 'file_name', 'file_size', 'generate_id'],
             'limit': page_size,
             'offset': page * page_size,
             'sortBy': sorting,

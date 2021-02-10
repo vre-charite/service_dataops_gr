@@ -103,7 +103,7 @@ class folders(Resource):
         gr_full_path = os.path.join(
             ConfigClass.NFS_ROOT_PATH, container_path, sub_path)
 
-        if current_identity['project_role'] == 'collaborator':
+        if current_identity['project_role'] == 'collaborator' or current_identity['project_role'] == 'contributor':
             gr_full_path = os.path.join(
                 ConfigClass.NFS_ROOT_PATH, container_path, 'raw')
        
@@ -124,5 +124,12 @@ class folders(Resource):
             if str(e) == 'Path to folder does not exist.':
                 return {'Error': str(e)}, 404
             return {'Error': str(e)}, 403
+
+        
+        gr_folders.append({'trash': []})
+        vre_folders.append({'trash': []})
+
+        if current_identity['project_role'] == 'contributor':
+            return {'result': {'gr': gr_folders }}, 200
 
         return {'result': {'gr': gr_folders, 'vre': vre_folders}}, 200

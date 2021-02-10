@@ -139,7 +139,10 @@ class FileMetaRestful(Resource):
         try:
             res = SrvContainerManager().fetch_container_by_id(container_id)
             if len(res) == 0:
-                return {'result': 'Container does not exist.'}, 404
+                _res.set_code(EAPIResponseCode.not_found)
+                _res.set_error_msg('Container does not exist.')
+                _res.set_result('Container does not exist.')
+                return _res.to_dict, _res.code
             container_path = res[0]['path']
             project_code = res[0]['code']
             if not container_path or not project_code:
@@ -159,15 +162,20 @@ class FileMetaRestful(Resource):
                 'greenroom': ConfigClass.NFS_ROOT_PATH,
                 'vrecore': ConfigClass.VRE_ROOT_PATH
             }.get(namespace)
-            absolute_path = "{}/{}/{}".format(namespace_path, project_code, relevant_path)
+            absolute_path = "{}/{}/{}".format(namespace_path, project_code, relevant_path) if relevant_path != "TRASH" \
+                else "{}/TRASH/{}".format(namespace_path, project_code)
             filter_condition.update({'name': absolute_path})
+
+        if entity_type == 'file_data':
+            if "process_pipeline" in filter_condition:
+                filter_condition['processed_pipeline'] = filter_condition.pop("process_pipeline")
 
         self._logger.debug(str(filter_condition))
 
         # query metadata
         try:
             res = SrvAtlasManager().query_file_meta(container_id, filter_condition,
-                                                    page_size, page, sorting, order, entity_type, current_identity['project_role'])
+                                                    page_size, page, sorting, order, entity_type, current_identity['project_role'], current_identity['username'])
         except Exception as e:
             self._logger.error(
                 'Failed to query file metadata: ' + str(e))

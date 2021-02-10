@@ -12,6 +12,7 @@ import datetime
 import services.file_upload as srv_upload
 import models.fsm_file_upload as fsmup
 from services.tags_services.tags_manager import SrvTagsMgr
+from services.data_operations.data_meta_manager import SrvFileDataMgr
 
 
 class fs(object):
@@ -88,8 +89,25 @@ class fs(object):
         try:
             current_app.logger.debug(
                 'create atlas record but tags {} in format {}'.format(tags, file_name))
+            # create file meta v2
+            file_meta_mgr = SrvFileDataMgr(current_app.logger)
+            res_create_meta = file_meta_mgr.create(
+                uploader,
+                file_name,
+                upload_path,
+                size,
+                'Raw file in greenroom',
+                'greenroom',
+                'raw',
+                bucket_name,
+                tags,
+                metadatas.get('generateID', 'undefined'))
+            if res_create_meta.get('error'):
+                current_app.logger.error(str(res_create_meta))
+                raise Exception('error when creating meta v2')
+            else:
+                current_app.logger.info('done with creating atlas record v2')
             # create entity in atlas
-            timezone_dt = datetime.datetime.now(datetime.timezone.utc)
             post_data = {
                 'referredEntities': {},
                 'entity': {
@@ -136,6 +154,7 @@ class fs(object):
             }
             res = requests.post(ConfigClass.METADATA_API+'/v1/entity',
                                 json=post_data, headers={'content-type': 'application/json'})
+            current_app.logger.debug(ConfigClass.METADATA_API + '/v1/entity +' + str(post_data))
             if res.status_code != 200:
                 raise Exception(res.text)
 

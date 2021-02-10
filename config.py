@@ -14,6 +14,8 @@ class ConfigClass(object):
     TEMP_BASE = "/tmp/dataops"
     DOWNLOAD_KEY = 'indoc101'
 
+    ARCHIVE_TYPES = [".zip"]
+
     # Neo4j Service
     NEO4J_SERVICE = "http://neo4j.utility:5062/v1/neo4j/"  # Server
 
@@ -36,5 +38,8 @@ class ConfigClass(object):
     JWT_AUTH_URL_RULE = None
 
     api_modules = ["api"]
+
+    # data_ops_utility host
+    data_ops_util_host = "http://dataops-ut.utility:5063"
 
 # trrigger

@@ -107,7 +107,8 @@ class ChunkUploadSuccessRestful(Resource):
         result = {
             'task_id': task_id,
             'session_id': session_id,
-            'message': 'All chunks received, task_id is %s' % task_id}
+            'message': 'All chunks received, task_id is %s' % task_id,
+            'upload_path': upload_path + '/' + file_upload_form.resumable_filename}
         _res.set_code(EAPIResponseCode.success)
         _res.set_result(result)
         return _res.to_dict, _res.code

@@ -5,7 +5,7 @@ class EUserRole(Enum):
     admin = 0
     collaborator = 1
     member = 2
-    contributor = 3
+    contributor = 1
     visitor = 4
 
 def map_role_front_to_sys(role: str):
@@ -36,7 +36,7 @@ def map_role_sys_to_front(role: EUserRole):
     }.get(role, None)
 
 def map_role_neo4j_to_sys(role: int):
-    return {
+    mapped = {
         'admin': EUserRole.admin, 
         'member': EUserRole.member,
         'uploader': EUserRole.contributor,
@@ -44,3 +44,6 @@ def map_role_neo4j_to_sys(role: int):
         'visitor': EUserRole.visitor,
         'collaborator': EUserRole.collaborator
     }.get(role, None)
+    if not role:
+        raise Exception('Invalid Neo4j Role: ' + str(role))
+    return mapped

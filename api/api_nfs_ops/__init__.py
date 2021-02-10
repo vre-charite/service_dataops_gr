@@ -35,3 +35,5 @@ nfs_entity_ns.add_resource(DataTagRestful, '/data/tags')
 nfs_entity_ns.add_resource(FileProcessOnCreate, '/containers/<container_id>/files/process/on-create')
 
 nfs_entity_ns.add_resource(file_download_checker, '/download-state')
+
+nfs_entity_ns.add_resource(FileExists, '/file-exists')

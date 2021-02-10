@@ -19,12 +19,9 @@ def query(page, page_size, operation_type, project_code, start_date, end_date, o
             start_date = int(start_date)
             end_date = int(end_date)
 
+        type_name = 'file_operation_logs'
+
         criterion = [
-            {
-                'attributeName': 'operationType',
-                'attributeValue': operation_type,
-                'operator': 'eq'
-            },
             {
                 'attributeName': 'bucketName',
                 'attributeValue': project_code,
@@ -39,8 +36,28 @@ def query(page, page_size, operation_type, project_code, start_date, end_date, o
                 'attributeName': 'createTime',
                 'attributeValue': int(end_date),
                 'operator': 'lte'
+            },
+            {
+                'attributeName': 'operationType',
+                'attributeValue': operation_type,
+                'operator': 'eq'
             }
         ]
+
+        # if operation_type == 'data_delete':
+        #     criterion.append({
+        #         'attributeName': 'processed_pipeline',
+        #         'attributeValue': operation_type,
+        #         'operator': 'eq'
+        #     })
+        #     type_name = 'file_data'
+        # else:
+            # criterion.append({
+            #     'attributeName': 'operationType',
+            #     'attributeValue': operation_type,
+            #     'operator': 'eq'
+            # })
+        
 
         
         if owner:
@@ -66,10 +83,10 @@ def query(page, page_size, operation_type, project_code, start_date, end_date, o
                 "criterion": criterion
             },
             'tagFilters': None,
-            'attributes': ['owner', 'operator', 'fileName', 'createTime', 'originPath', 'path'],
+            'attributes': ['owner', 'operator', 'fileName', 'file_name', 'createTime', 'originPath', 'path', 'operationType'],
             'sortBy': 'createTime',
             'sortOrder': 'DESCENDING',
-            'typeName': 'file_operation_logs',
+            'typeName': type_name,
             'classification': None,
             'termName': None
         }
@@ -86,7 +103,6 @@ def query(page, page_size, operation_type, project_code, start_date, end_date, o
                             json=post_data, headers={'content-type': 'application/json'})
         if res.status_code != 200:
             return {'result': res.json()}, 403
-
         res = res.json()['result']
 
         if not res.get('entities', None):
@@ -95,4 +111,4 @@ def query(page, page_size, operation_type, project_code, start_date, end_date, o
         return res
 
     except Exception as e:
-        print(e)
+        print(srt(e))

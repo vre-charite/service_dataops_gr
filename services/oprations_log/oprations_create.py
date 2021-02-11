@@ -6,6 +6,8 @@ from config import ConfigClass
 def add(operation_type, owner, operator, input_file_path, output_file_path, file_size, project_code, generate_id, process_pipeline):
     try:
         file_name = os.path.basename(output_file_path)
+
+        current_time = time.time()
         
         post_data = {
             'referredEntities': {},
@@ -21,7 +23,7 @@ def add(operation_type, owner, operator, input_file_path, output_file_path, file
                     'isFile': False,
                     'numberOfReplicas': 0,
                     'replicatedFrom': None,
-                    'qualifiedName': output_file_path,
+                    'qualifiedName': output_file_path + '_' + str(current_time),
                     'displayName': None,
                     'description': None,
                     'extendedAttributes': None,

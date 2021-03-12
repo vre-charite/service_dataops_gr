@@ -11,7 +11,7 @@ from config import ConfigClass
 import requests
 import os
 import uuid
-from flask_jwt import jwt_required
+from flask_jwt import jwt_required, current_identity
 from resources.decorator import check_role
 from .namespace import api_file_upload_ns
 from api import module_api
@@ -72,6 +72,7 @@ class ChunkUploadSuccessRestful(Resource):
             return {'result': 'Container does not exist.'}, 404
         # since we check it before so dont check it again
         path = datasets[0].get('path', None)
+        code = datasets[0].get('code', None)
 
         # format upload path with subfolder if required
         upload_path = os.path.join(
@@ -109,6 +110,24 @@ class ChunkUploadSuccessRestful(Resource):
             'session_id': session_id,
             'message': 'All chunks received, task_id is %s' % task_id,
             'upload_path': upload_path + '/' + file_upload_form.resumable_filename}
+        
+        audit_log_url = ConfigClass.PROVENANCE_SERVICE + '/v1/audit-logs'
+        payload_audit_log = {
+            "action": "data_upload",
+            "operator": current_identity["username"],
+            "target": upload_path + '/' + file_upload_form.resumable_filename,
+            "outcome": upload_path + '/' + file_upload_form.resumable_filename,
+            "resource": "file",
+            "display_name": file_upload_form.resumable_filename,
+            "project_code": code,
+            "extra": {}
+        }
+
+        res_audit_logs = requests.post(
+            audit_log_url,
+            json=payload_audit_log
+        )
+
         _res.set_code(EAPIResponseCode.success)
         _res.set_result(result)
         return _res.to_dict, _res.code

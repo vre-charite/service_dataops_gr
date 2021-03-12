@@ -602,7 +602,7 @@ class processedFile(Resource):
 
 class totalFileCount(Resource):
     @jwt_required()
-    @check_role("admin")
+    @check_role("uploader")
     def get(self, container_id):
         '''
         Get file count from total raw and processed base on container id
@@ -615,6 +615,7 @@ class totalFileCount(Resource):
         except Exception as e:
             return {'result': str(e)}, 403
 
+        project_role = current_identity['project_role']
         datasets = res.json()
         if res.status_code != 200:
             return {'result': res.json()}, res.status_code
@@ -625,24 +626,99 @@ class totalFileCount(Resource):
             return {'result': 'Cannot find the path attribute.'}, 403
 
         # call the atlas service to get the file information
+        criterion = [
+            {
+                'attributeName': 'bucketName',
+                'attributeValue': container_path,
+                'operator': 'eq'
+            }
+        ]
+        delete_criterion = [
+            {
+                'attributeName': 'bucketName',
+                'attributeValue': container_path,
+                'operator': 'eq'
+            },
+            {
+                'attributeName': '__customAttributes',
+                'attributeValue': "archived",
+                'operator': 'CONTAINS'
+            }
+        ]
         post_data = {
             'excludeDeletedEntities': True,
             'includeSubClassifications': False,
             'includeSubTypes': False,
             'includeClassificationAttributes': False,
             'entityFilters': {
-                'attributeName': 'bucketName',
-                'attributeValue': container_path,
-                'operator': 'eq'
+                "condition": "AND",
+                "criterion": criterion
             },
             'tagFilters': None,
-            'attributes': [],
-            'limit': 1,
+            'attributes': ['__customAttributes'],
+            'limit': 100,
             'offset': 0,
             'typeName': 'nfs_file',
             'classification': None,
             'termName': None
         }
+
+        delete_post_data = {
+            'excludeDeletedEntities': True,
+            'includeSubClassifications': False,
+            'includeSubTypes': False,
+            'includeClassificationAttributes': False,
+            'entityFilters': {
+                "condition": "AND",
+                "criterion": delete_criterion
+            },
+            'tagFilters': None,
+            'attributes': ['__customAttributes'],
+            'limit': 100,
+            'offset': 0,
+            'typeName': 'nfs_file',
+            'classification': None,
+            'termName': None
+        }
+
+        if project_role != 'admin':
+            criterion = [
+                {
+                    'attributeName': 'bucketName',
+                    'attributeValue': container_path,
+                    'operator': 'eq'
+                },
+                {
+                    'attributeName': 'owner',
+                    'attributeValue': current_identity['username'],
+                    'operator': 'eq'
+                }
+            ]
+            delete_criterion = [
+                {
+                    'attributeName': 'bucketName',
+                    'attributeValue': container_path,
+                    'operator': 'eq'
+                },
+                {
+                    'attributeName': 'owner',
+                    'attributeValue': current_identity['username'],
+                    'operator': 'eq'
+                },
+                {
+                    'attributeName': '__customAttributes',
+                    'attributeValue': "archived",
+                    'operator': 'CONTAINS'
+                }
+            ]
+            post_data['entityFilters'] = {
+                "condition": "AND",
+                "criterion": criterion
+            }
+            delete_post_data['entityFilters'] = {
+                "condition": "AND",
+                "criterion": delete_criterion
+            }
 
         try:
             res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
@@ -651,11 +727,19 @@ class totalFileCount(Resource):
                 return {'result': res.json()}, 403
             res = res.json()['result']
             raw_count = res['approximateCount']
+
+            delete_res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
+                                json=delete_post_data, headers={'content-type': 'application/json'})
+            if delete_res.status_code != 200:
+                return {'result': delete_res.json()}, 403
+            delete_res = delete_res.json()['result']
+            delete_raw_count = delete_res['approximateCount']
         except Exception as e:
             return {'result': str(e)}, 403
 
         # next use the nfs_processed to get the count of processed file
         post_data['typeName'] = 'nfs_file_processed'
+        delete_post_data['typeName'] = 'nfs_file_processed'
         try:
             res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
                                 json=post_data, headers={'content-type': 'application/json'})
@@ -663,10 +747,16 @@ class totalFileCount(Resource):
                 return {'result': res.json()}, 403
             res = res.json()['result']
             processed_count = res['approximateCount']
+
+            delete_res = requests.post(ConfigClass.METADATA_API+'/v1/entity/basic',
+                                json=delete_post_data, headers={'content-type': 'application/json'})
+            if delete_res.status_code != 200:
+                return {'result': delete_res.json()}, 403
+            delete_res = delete_res.json()['result']
+            delete_processed_count = delete_res['approximateCount']
         except Exception as e:
             return {'result': str(e)}, 403
-
-        return {'result': {'raw_file_count': raw_count, 'process_file_count': processed_count}}, 200
+        return {'result': {'raw_file_count': raw_count - delete_raw_count, 'process_file_count': processed_count - delete_processed_count }}, 200
 
 
 class dailyFileCount(Resource):
@@ -812,13 +902,13 @@ class dailyFileCount(Resource):
                     res.update({'entities': []})
 
                 # also change the timestamp from int to string
-                for e in res['entities']:
-                    timestamp_int = e['attributes'].get('createTime', None)
-                    # print(timestamp_int)
-                    if timestamp_int:
-                        central = datetime.fromtimestamp(timestamp_int, tz=timezone.utc)
-                        e['attributes']['createTime'] = central.strftime(
-                            '%Y-%m-%d %H:%M:%S')
+                # for e in res['entities']:
+                #     timestamp_int = e['attributes'].get('createTime', None)
+                #     # print(timestamp_int)
+                #     if timestamp_int:
+                #         central = datetime.fromtimestamp(timestamp_int, tz=timezone.utc)
+                #         e['attributes']['createTime'] = central.strftime(
+                #             '%Y-%m-%d %H:%M:%S')
                 upload_log = res['entities']
             else:
                 upload_count = 0
@@ -870,13 +960,12 @@ class dailyFileCount(Resource):
                     res.update({'entities': []})
 
                 # also change the timestamp from int to string
-                for e in res['entities']:
-                    timestamp_int = e['attributes'].get('createTime', None)
-                    # print(timestamp_int)
-                    if timestamp_int:
-                        central = datetime.fromtimestamp(timestamp_int, tz=timezone.utc)
-                        e['attributes']['createTime'] = central.strftime(
-                            '%Y-%m-%d %H:%M:%S')
+                # for e in res['entities']:
+                #     timestamp_int = e['attributes'].get('createTime', None)
+                #     if timestamp_int:
+                #         central = datetime.fromtimestamp(timestamp_int, tz=timezone.utc)
+                #         e['attributes']['createTime'] = central.strftime(
+                #             '%Y-%m-%d %H:%M:%S')
                 download_log = res['entities']
             else:
                 download_count = 0

@@ -23,6 +23,8 @@ class ConfigClass(object):
     # Metadata service
     METADATA_API = "http://cataloguing.utility:5064"  # Server
 
+    PROVENANCE_SERVICE = "http://provenance.utility:5077"
+
     # Redis Service
     REDIS_HOST = "redis-master.utility"
     REDIS_PORT = 6379

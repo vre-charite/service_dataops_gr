@@ -3,9 +3,8 @@ from flask_restx import Resource
 from services.logger_services.logger_factory_service import SrvLoggerFactory
 from models.api_response import APIResponse, EAPIResponseCode
 from config import ConfigClass
+from .utils import validate_taglist
 import requests
-import re
-
 
 class FileTagRestfulV2(Resource):
     _logger = SrvLoggerFactory('api_file_tag').get_logger()
@@ -15,29 +14,18 @@ class FileTagRestfulV2(Resource):
         post_data = request.get_json()
         taglist = post_data.get('taglist', None)
         geid = post_data.get('geid', None)
+        internal = post_data.get('internal', False)
+
         if not taglist or not geid or not isinstance(taglist, list) or not isinstance(geid, str):
             _res.set_code(EAPIResponseCode.forbidden)
-            _res.set_error_msg('taglist and geid are required.s')
+            _res.set_error_msg('taglist and geid are required.')
             return _res.to_dict, _res.code
 
-        tag_requirement = re.compile("^[a-z0-9-]{1,32}$")
-        for tag in taglist:
-            if not re.search(tag_requirement, tag):
-                _res.set_code(EAPIResponseCode.forbidden)
-                _res.set_error_msg('invalid tag, must be 1-32 characters lower case, number or hyphen')
-                return _res.to_dict, _res.code
-
-        # duplicate check
-        if len(taglist) != len(set(taglist)):
-            _res.set_code(EAPIResponseCode.bad_request)
-            _res.set_error_msg('duplicate tags not allowed')
+        valid, validate_data = validate_taglist(taglist, internal)
+        if not valid:
+            _res.set_error_msg(validate_data["error"])
+            _res.set_code(validate_data["code"])
             return _res.to_dict, _res.code
-
-        if len(taglist) > 10:
-            _res.set_code(EAPIResponseCode.bad_request)
-            _res.set_error_msg('limit of 10 tags')
-            return _res.to_dict, _res.code
-
 
         # update label in neo4j 
         try:
@@ -87,3 +75,25 @@ class FileTagRestfulV2(Resource):
         _res.set_result('Success')
         _res.set_code(EAPIResponseCode.success)
         return _res.to_dict, _res.code
+
+
+class FileTagValidate(Resource):
+
+    def post(self, container_id):
+        _res = APIResponse() 
+        post_data = request.get_json()
+        taglist = post_data.get('taglist', [])
+        if not taglist or not isinstance(taglist, list):
+            _res.set_code(EAPIResponseCode.forbidden)
+            _res.set_error_msg('taglist required.')
+            return _res.to_dict, _res.code
+
+        valid, validate_data = validate_taglist(taglist)
+        if not valid:
+            _res.set_error_msg(validate_data["error"])
+            _res.set_code(validate_data["code"])
+            return _res.to_dict, _res.code
+        _res.set_result("valid")
+        return _res.to_dict, _res.code
+
+

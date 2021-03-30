@@ -18,6 +18,7 @@ class ConfigClass(object):
 
     # Neo4j Service
     NEO4J_SERVICE = "http://neo4j.utility:5062/v1/neo4j/"  # Server
+    NEO4J_HOST = "http://neo4j.utility:5062"  # Server
 
 
     # Metadata service

@@ -12,6 +12,7 @@ from .api_lineage_showcase.api_registry import APILineageShowcase
 from .api_file_actions.api_registry import APIFileTransfer
 from .api_archive.api_registry import APIArchive
 from .api_tags.api_registry import APITags
+from .api_file_count.api_registry import APIFileCount
 
 apis = [
     APIFileUpload(),
@@ -19,6 +20,7 @@ apis = [
     APIFileTransfer(),
     APIArchive(),
     APITags(),
+    APIFileCount(),
 ]
 
 def api_registry(apis):

@@ -20,11 +20,8 @@ class ConfigClass(object):
     NEO4J_SERVICE = "http://neo4j.utility:5062/v1/neo4j/"  # Server
     NEO4J_HOST = "http://neo4j.utility:5062"  # Server
 
-
     # Metadata service
     METADATA_API = "http://cataloguing.utility:5064"  # Server
-
-    PROVENANCE_SERVICE = "http://provenance.utility:5077"
 
     # Redis Service
     REDIS_HOST = "redis-master.utility"
@@ -41,8 +38,3 @@ class ConfigClass(object):
     JWT_AUTH_URL_RULE = None
 
     api_modules = ["api"]
-
-    # data_ops_utility host
-    data_ops_util_host = "http://dataops-ut.utility:5063"
-
-# trrigger

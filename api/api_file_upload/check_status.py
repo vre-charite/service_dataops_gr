@@ -18,48 +18,6 @@ args_model_get = {
     'timestamp': {'type': 'string'},
 }
 
-class CheckUploadStatusRestfulDeprecated(Resource):
-    _logger = SrvLoggerFactory('api_file_upload').get_logger()
-
-    @api_file_upload_ns.doc(params={'task_id': {'type': 'string'}})
-    @jwt_required()
-    @check_role("uploader")
-    def get(self, container_id):
-        '''
-        This method allow to check file upload status. deprecated
-        '''
-        # init resp
-        _res = APIResponse()
-        self._logger.info('CheckUploadStatusRestful Request IP: ' + str(request.remote_addr))
-        self._logger.info(
-            'Check Upload Task Status on container {} with info {}'.format(str(container_id), request.args.to_dict()))
-
-        task_id = request.args.get('task_id', None)
-        if(task_id is None):
-            return {'result': 'task id is required.'}, 403
-
-        task_done = executor.futures.done(task_id)
-        if task_done is None:
-            return {'result': 'task does not exist'}, 404
-
-        if not task_done:
-            result = {'status': 'running'}
-            return {'result': result}, 200
-
-        try:
-            future = executor.futures.pop(task_id)
-            success, msg = future.result()
-        except Exception as e:
-            return {'result': str(e)}, 403
-
-        # based on the return format the response
-        if success:
-            result = {'status': 'success'}
-        else:
-            result = {'status': 'error', 'message': msg}
-
-        return {'result': result}, 200
-
 class CheckUploadStateRestful(Resource):
     _logger = SrvLoggerFactory('api_file_upload').get_logger()
 
@@ -70,7 +28,7 @@ class CheckUploadStateRestful(Resource):
         This method allow to check file upload status. timestamp optional,
         default return today's session
         '''
-        
+
         # init resp
         _res = APIResponse()
         self._logger.info('CheckUploadStatusRestful Request IP: ' + str(request.remote_addr))
@@ -95,7 +53,7 @@ class CheckUploadStateRestful(Resource):
         '''
         This method allow to delete file upload status.
         '''
-        
+
         # init resp
         _res = APIResponse()
         self._logger.info('CleanUploadStateRestful Request IP: ' + str(request.remote_addr))
@@ -112,3 +70,4 @@ class CheckUploadStateRestful(Resource):
         _res.set_result('Success')
         _res.set_code(EAPIResponseCode.success)
         return _res.to_dict, _res.code
+

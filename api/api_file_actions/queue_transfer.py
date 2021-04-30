@@ -8,7 +8,6 @@ from config import ConfigClass
 import shutil
 import requests
 from services.data_operations.data_transfer import transfer_file_message, interpret_operation_location
-from services.data_operations.data_on_processed_catelogue import SrvProcessedCatelogue
 from services.data_operations.data_operation_status import set_status, EDataActionType
 from services.data_operations.check_path import check_is_greenroom_raw
 from flask_jwt import current_identity

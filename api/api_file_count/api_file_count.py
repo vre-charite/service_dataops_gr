@@ -31,7 +31,6 @@ class FileCount(Resource):
         }
         if request.args.get("uploader"):
             relation_payload["query"]["end_params"]["File:Raw:Greenroom"]["uploader"] = request.args.get("uploader")
-        print(relation_payload)
         try:
             response = requests.post(ConfigClass.NEO4J_HOST + "/v2/neo4j/relations/query", json=relation_payload)
         except Exception as e:
@@ -50,6 +49,8 @@ class FileCount(Resource):
                 }
             },
         }
+        if request.args.get("uploader"):
+            relation_payload["query"]["end_params"]["File:Processed:Greenroom"]["uploader"] = request.args.get("uploader")
         try:
             response = requests.post(ConfigClass.NEO4J_HOST + "/v2/neo4j/relations/query", json=relation_payload)
         except Exception as e:

@@ -2,7 +2,7 @@ from services.data_providers.redis import SrvRedisSingleton
 import os, json, time, enum
 
 def set_status(session_id, job_id, source, action, target_status,
-    project_code, operator, progress):
+    project_code, operator, progress, payload={}):
     srv_redis = SrvRedisSingleton()
     my_key = "dataaction:{}:{}:{}:{}:{}:{}".format(session_id, job_id, action, project_code, operator, source)
     my_value = json.dumps({
@@ -14,7 +14,8 @@ def set_status(session_id, job_id, source, action, target_status,
         "project_code": project_code,
         "operator": operator,
         "progress": progress,
-        'update_timestamp': str(round(time.time()))
+        'update_timestamp': str(round(time.time())),
+        'payload': payload
     })
     srv_redis.set_by_key(my_key, my_value)
 

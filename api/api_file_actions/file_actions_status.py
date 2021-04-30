@@ -57,6 +57,7 @@ class FileActionsStatus(Resource):
             project_code = req_content.get('project_code', None)
             operator = req_content.get('operator', None)
             progress = req_content.get('progress', 0)
+            payload = req_content.get('payload', {})
 
             if session_id and source and job_id \
                 and target_status and operator and project_code:
@@ -74,7 +75,8 @@ class FileActionsStatus(Resource):
                 target_status,
                 project_code,
                 operator,
-                progress
+                progress,
+                payload
             )
             
             _res.set_result("Updated FileActionsStatus: " + target_status)

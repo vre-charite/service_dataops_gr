@@ -16,7 +16,7 @@ class FileTagRestfulV2(Resource):
         geid = post_data.get('geid', None)
         internal = post_data.get('internal', False)
 
-        if not taglist or not geid or not isinstance(taglist, list) or not isinstance(geid, str):
+        if not geid or not isinstance(taglist, list) or not isinstance(geid, str):
             _res.set_code(EAPIResponseCode.forbidden)
             _res.set_error_msg('taglist and geid are required.')
             return _res.to_dict, _res.code

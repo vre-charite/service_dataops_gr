@@ -44,10 +44,20 @@ class ArchiveList(Resource):
             api_response.set_code(EAPIResponseCode.bad_request)
             api_response.set_result("file_path is required")
             return api_response.to_dict
-        if not os.path.isfile(file_path):
-            api_response.set_code(EAPIResponseCode.not_found)
-            api_response.set_result("File is not found")
+        rel_path = file_path.rstrip('/')
+        if ConfigClass.NFS_ROOT_PATH in rel_path:
+            folder_start_level = 3
+        elif ConfigClass.VRE_ROOT_PATH in rel_path:
+            folder_start_level = 2
+        else:
+            api_response.set_code(EAPIResponseCode.bad_request)
+            api_response.set_result("Unknown path")
             return api_response.to_dict
+        rel_path = rel_path.lstrip(ConfigClass.NFS_ROOT_PATH).lstrip(ConfigClass.VRE_ROOT_PATH)
+        if len(rel_path.split('/')) > folder_start_level:
+            start_label = 'Folder'
+        else:
+            start_label = 'Dataset'
         file_type = os.path.splitext(file_path)[1]
         if file_type not in ConfigClass.ARCHIVE_TYPES:
             api_response.set_code(EAPIResponseCode.bad_request)
@@ -62,12 +72,13 @@ class ArchiveList(Resource):
         file = response.json()[0]
         # Get related dataset
         relation_query = {
-            "start_label": "Dataset",
+            "start_label": start_label,
             "end_label": "File",
             "end_params": {
                 "id": file["id"]
             }
         }
+
         response = requests.post(ConfigClass.NEO4J_SERVICE + "relations/query", json=relation_query)
         dataset = response.json()[0]["start_node"]
 
@@ -103,7 +114,6 @@ class ArchiveList(Resource):
                     api_response.set_code(EAPIResponseCode.unauthorized)
                     api_response.set_result("Permission Denied")
                     return api_response.to_dict
-
 
         results = {} 
         with ArchiveFile(file_path, 'r') as archive:

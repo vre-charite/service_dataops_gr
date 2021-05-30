@@ -90,6 +90,8 @@ class ArchiveList(Resource):
             ConfigClass.NEO4J_SERVICE + "relations/query", json=relation_query)
         dataset = response.json()[0]["start_node"]
 
+        self._logger.info('[test01] dataset: ' + str(response.json()))
+
         relation_query = {
             "start_id": current_identity["user_id"],
             "end_id": dataset["id"],

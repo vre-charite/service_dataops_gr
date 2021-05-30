@@ -4,13 +4,13 @@ from flask_jwt import jwt_required, current_identity
 
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
+from services.logger_services.logger_factory_service import SrvLoggerFactory
 from api import module_api
-from .namespace import api_archive 
+from .namespace import api_archive
 
 import requests
 import os
 from zipfile import ZipFile
-
 
 get_model = module_api.model("get_archive", {
     "file_path": fields.String,
@@ -32,13 +32,16 @@ get_returns = """
     }
 """
 
+
 class ArchiveList(Resource):
+    _logger = SrvLoggerFactory('api_archive').get_logger()
 
     @jwt_required()
     @api_archive.expect(get_model)
     @api_archive.response(200, get_returns)
     def get(self):
         file_path = request.args.get("file_path")
+        self._logger.info('[test01] Get zip files from : ' + file_path)
         api_response = APIResponse()
         if not file_path:
             api_response.set_code(EAPIResponseCode.bad_request)
@@ -53,7 +56,8 @@ class ArchiveList(Resource):
             api_response.set_code(EAPIResponseCode.bad_request)
             api_response.set_result("Unknown path")
             return api_response.to_dict
-        rel_path = rel_path.lstrip(ConfigClass.NFS_ROOT_PATH).lstrip(ConfigClass.VRE_ROOT_PATH)
+        rel_path = rel_path.lstrip(ConfigClass.NFS_ROOT_PATH).lstrip(
+            ConfigClass.VRE_ROOT_PATH)
         if len(rel_path.split('/')) > folder_start_level:
             start_label = 'Folder'
         else:
@@ -68,8 +72,11 @@ class ArchiveList(Resource):
             ArchiveFile = ZipFile
 
         role = current_identity["role"]
-        response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/File/query", json={"full_path": file_path})
+        self._logger.info('[test01] Current User Platform Role: ' + str(role))
+        response = requests.post(
+            ConfigClass.NEO4J_SERVICE + "nodes/File/query", json={"full_path": file_path})
         file = response.json()[0]
+        self._logger.info('[test01] File: ' + str(file))
         # Get related dataset
         relation_query = {
             "start_label": start_label,
@@ -79,14 +86,16 @@ class ArchiveList(Resource):
             }
         }
 
-        response = requests.post(ConfigClass.NEO4J_SERVICE + "relations/query", json=relation_query)
+        response = requests.post(
+            ConfigClass.NEO4J_SERVICE + "relations/query", json=relation_query)
         dataset = response.json()[0]["start_node"]
 
         relation_query = {
             "start_id": current_identity["user_id"],
             "end_id": dataset["id"],
         }
-        response = requests.get(ConfigClass.NEO4J_SERVICE + "relations", params=relation_query)
+        response = requests.get(
+            ConfigClass.NEO4J_SERVICE + "relations", params=relation_query)
         # Platform admin can edit any files
         if not role == "admin":
             if not response.json():
@@ -95,6 +104,8 @@ class ArchiveList(Resource):
                 api_response.set_result("Permission Denied")
                 return api_response.to_dict
             project_role = response.json()[0]['r']['type']
+
+            self._logger.info('[test01] Project Role: ' + project_role)
 
             if project_role == "contributor":
                 if "Processed" in file["labels"] or "VRECore" in file["labels"]:
@@ -115,7 +126,7 @@ class ArchiveList(Resource):
                     api_response.set_result("Permission Denied")
                     return api_response.to_dict
 
-        results = {} 
+        results = {}
         with ArchiveFile(file_path, 'r') as archive:
             for file in archive.infolist():
                 # get filename for file
@@ -135,6 +146,6 @@ class ArchiveList(Resource):
                         "size": file.file_size,
                         "is_dir": False,
                     }
-        
+
         api_response.set_result(results)
         return api_response.to_dict

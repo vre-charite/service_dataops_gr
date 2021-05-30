@@ -41,11 +41,13 @@ class ArchiveList(Resource):
     @api_archive.response(200, get_returns)
     def get(self):
         file_path = request.args.get("file_path")
+        project_geid = request.args.get("project_geid")
+
         self._logger.info('[test01] Get zip files from : ' + file_path)
         api_response = APIResponse()
-        if not file_path:
+        if not file_path or not project_geid:
             api_response.set_code(EAPIResponseCode.bad_request)
-            api_response.set_result("file_path is required")
+            api_response.set_result("file_path, project_geid is required")
             return api_response.to_dict
         rel_path = file_path.rstrip('/')
         if ConfigClass.NFS_ROOT_PATH in rel_path:
@@ -92,16 +94,28 @@ class ArchiveList(Resource):
 
         self._logger.info('[test01] dataset: ' + str(response.json()))
 
+        # Get Project
+        project_res = http_query_node(
+            'Dataset', {"global_entity_id": project_geid})
+        self._logger.info('[test01] Project global_entity_id: ' + project_geid)
+        if project_res.status_code == 200:
+            self._logger.info('[test01] Project: ' + str(project_res.text))
+        else:
+            self._logger.error('[test01] Project: ' + str(project_res.text))
+        project = project_res.json()[0]
+
         relation_query = {
             "start_id": current_identity["user_id"],
-            "end_id": dataset["id"],
+            "end_id": project["id"],
         }
         self._logger.info('[test01] NEO4J query: ' + str(relation_query))
         response = requests.get(
             ConfigClass.NEO4J_SERVICE + "relations", params=relation_query)
+
         # Platform admin can edit any files
         if not role == "admin":
             self._logger.info('[test01] NEO4J response: ' + response.text)
+
             if not response.json():
                 # User doesn't belong to the project
                 api_response.set_code(EAPIResponseCode.unauthorized)
@@ -153,3 +167,13 @@ class ArchiveList(Resource):
 
         api_response.set_result(results)
         return api_response.to_dict
+
+
+def http_query_node(main_label, query_params={}):
+    payload = {
+        **query_params
+    }
+    node_query_url = ConfigClass.NEO4J_SERVICE + \
+        "nodes/{}/query".format(main_label)
+    response = requests.post(node_query_url, json=payload)
+    return response

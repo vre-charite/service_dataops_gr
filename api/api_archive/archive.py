@@ -94,11 +94,12 @@ class ArchiveList(Resource):
             "start_id": current_identity["user_id"],
             "end_id": dataset["id"],
         }
+        self._logger.info('[test01] NEO4J query: ' + str(relation_query))
         response = requests.get(
             ConfigClass.NEO4J_SERVICE + "relations", params=relation_query)
         # Platform admin can edit any files
         if not role == "admin":
-            self._logger.info('[test01] NEO4J: ' + response.text)
+            self._logger.info('[test01] NEO4J response: ' + response.text)
             if not response.json():
                 # User doesn't belong to the project
                 api_response.set_code(EAPIResponseCode.unauthorized)

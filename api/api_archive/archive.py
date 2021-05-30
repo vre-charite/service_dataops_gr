@@ -98,6 +98,7 @@ class ArchiveList(Resource):
             ConfigClass.NEO4J_SERVICE + "relations", params=relation_query)
         # Platform admin can edit any files
         if not role == "admin":
+            self._logger.info('[test01] NEO4J: ' + response.text)
             if not response.json():
                 # User doesn't belong to the project
                 api_response.set_code(EAPIResponseCode.unauthorized)

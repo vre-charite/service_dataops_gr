@@ -1,4 +1,5 @@
 from flask import Flask, request
+from flask_sqlalchemy import SQLAlchemy
 import requests
 from flask_cors import CORS
 from config import ConfigClass
@@ -15,6 +16,9 @@ from services.logger_services.logger_factory_service import SrvLoggerFactory
 
 executor = Executor()
 
+def create_db(app):
+    db = SQLAlchemy(app)
+    return db
 
 def create_app(extra_config_settings={}):
     # initialize app and config app
@@ -106,3 +110,5 @@ def create_app(extra_config_settings={}):
     app_logger.info('Start flask application')
 
     return app
+
+

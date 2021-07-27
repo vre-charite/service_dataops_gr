@@ -14,14 +14,48 @@ class ConfigClass(object):
     TEMP_BASE = "/tmp/dataops"
     DOWNLOAD_KEY = 'indoc101'
 
+    # Allowed archive types
     ARCHIVE_TYPES = [".zip"]
 
     # Neo4j Service
-    NEO4J_SERVICE = "http://neo4j.utility:5062/v1/neo4j/"  # Server
-    NEO4J_HOST = "http://neo4j.utility:5062"  # Server
+    NEO4J_SERVICE = "http://neo4j.utility:5062/v1/neo4j/"
+    NEO4J_SERVICE_V2 = "http://neo4j.utility:5062/v2/neo4j/"
+    CATALOGUING_SERVICE = "http://cataloguing.utility:5064/v1/"
+    QUEUE_SERVICE = "http://queue-producer.greenroom:6060/v1/"
 
-    # Metadata service
-    METADATA_API = "http://cataloguing.utility:5064"  # Server
+    # minio config
+    MINIO_OPENID_CLIENT = "react-app"
+    MINIO_ENDPOINT = "minio.minio:9000"
+    MINIO_HTTPS = False
+    KEYCLOAK_URL = "http://keycloak.utility:8080"
+    MINIO_ACCESS_KEY = "indoc-minio"
+    MINIO_SECRET_KEY = "Trillian42!"
+
+
+    if env == "test":
+        DATA_UTILITY_SERVICE = "http://dataops-ut.utility:5063/v1/"
+
+        # minio config
+        MINIO_ENDPOINT = "10.3.7.220"
+        MINIO_HTTPS = False
+        KEYCLOAK_URL = "http://10.3.7.220" # for local test ONLY
+
+
+
+    # MINIO_OPENID_CLIENT = "react-app"
+    # if env == "staging":
+    #     # MINIO_ENDPOINT = "10.3.7.240:80"
+    #     MINIO_ENDPOINT = "minio.minio:9000"
+    #     MINIO_HTTPS = False
+    #     KEYCLOAK_URL = "http://10.3.7.240:80"
+    #     MINIO_TEST_PASS = "IndocStaging2021!"
+    # else:
+    #     MINIO_ENDPOINT = "10.3.7.220"
+    #     MINIO_HTTPS = False
+    #     KEYCLOAK_URL = "http://keycloak.utility:8080"
+    #     # KEYCLOAK_URL = "http://10.3.7.220" # for local test ONLY
+    #     MINIO_TEST_PASS = "admin"
+
 
     # Redis Service
     REDIS_HOST = "redis-master.utility"
@@ -32,7 +66,23 @@ class ConfigClass(object):
         'charite': 'o2x7vGQx6m'
     }.get(env, "5wCCMMC1Lk")
 
-    service_queue_send_msg_url = "http://queue-producer.greenroom:6060/v1/send_message"
+
+    RDS_HOST = "opsdb.utility"
+    RDS_PORT = "5432"
+    RDS_DBNAME = "INDOC_VRE"
+    RDS_USER = "postgres"
+    RDS_PWD = "postgres"
+    RDS_SCHEMA_DEFAULT = "indoc_vre"
+    if env == "test":
+        RDS_HOST = '10.3.7.215'
+    if env == 'charite':
+        RDS_USER = "indoc_vre"
+        RDS_PWD = os.environ.get('RDS_PWD')
+    OPS_DB_URI= f"postgresql://{RDS_USER}:{RDS_PWD}@{RDS_HOST}/{RDS_DBNAME}"
+    SQLALCHEMY_DATABASE_URI = OPS_DB_URI
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    MAX_PREVIEW_SIZE = 500000
 
     # JWT
     JWT_AUTH_URL_RULE = None

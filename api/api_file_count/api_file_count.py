@@ -7,10 +7,14 @@ import requests
 
 class FileCount(Resource):
 
-    def get(self, container_id):
+    # def get(self, container_id):
+    def get(self, project_geid):
         api_response = APIResponse()
+
         try:
-            response = requests.get(ConfigClass.NEO4J_HOST + f"/v1/neo4j/nodes/Dataset/node/{container_id}")
+            query_params = {"global_entity_id": project_geid}
+            container_id = get_container_id(query_params)
+            response = requests.get(ConfigClass.NEO4J_HOST + f"/v1/neo4j/nodes/Container/node/{container_id}")
             dataset = response.json()[0]
         except Exception as e:
             api_response.set_code(EAPIResponseCode.internal_error)
@@ -18,7 +22,7 @@ class FileCount(Resource):
             return api_response.to_dict, api_response.code
 
         relation_payload = {
-            "start_label": "Dataset",
+            "start_label": "Container",
             "end_labels": ["File:Raw:Greenroom"],
             "query": {
                 "start_params": {"code": dataset["code"]},
@@ -40,7 +44,7 @@ class FileCount(Resource):
         raw_count = response.json()["total"]
 
         relation_payload = {
-            "start_label": "Dataset",
+            "start_label": "Container",
             "end_labels": ["File:Processed:Greenroom"],
             "query": {
                 "start_params": {"code": dataset["code"]},
@@ -66,3 +70,15 @@ class FileCount(Resource):
         api_response.set_code(EAPIResponseCode.success)
         return api_response.to_dict, api_response.code
 
+
+def get_container_id(query_params):
+    url = ConfigClass.NEO4J_SERVICE + f"nodes/Container/query"
+    payload = {
+        **query_params
+    }
+    result = requests.post(url, json=payload)
+    if result.status_code != 200 or result.json() == []:
+        return None
+    result = result.json()[0]
+    container_id = result["id"]
+    return str(container_id)

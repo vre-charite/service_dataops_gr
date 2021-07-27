@@ -1,4 +1,5 @@
 from app import create_app
+from app.database import db, init_db
 from config import ConfigClass
 import requests
 
@@ -8,12 +9,15 @@ class SetUpTest:
     def __init__(self, log):
         self.log = log
         self.app = PrepareTest().app
+        self.app.application.config['SQLALCHEMY_DATABASE_URI'] = ConfigClass.OPS_DB_URI
+        self.db = db
+        self.db.init_app(self.app.application)
 
-    def create_project(self, code, discoverable='true'):
+    def create_project(self, code, discoverable='true', name="DataopsGRTest"):
         self.log.info("\n")
         self.log.info("Preparing testing project".ljust(80, '-'))
-        testing_api = ConfigClass.NEO4J_HOST + "/v1/neo4j/nodes/Dataset"
-        params = {"name": "DataopsGRTest",
+        testing_api = ConfigClass.NEO4J_SERVICE + "nodes/Container"
+        params = {"name": name,
                   "path": code,
                   "code": code,
                   "description": "Project created by unit test, will be deleted soon...",
@@ -37,7 +41,7 @@ class SetUpTest:
     def delete_project(self, node_id):
         self.log.info("\n")
         self.log.info("Preparing delete project".ljust(80, '-'))
-        delete_api = ConfigClass.NEO4J_HOST + "/v1/neo4j/nodes/Dataset/node/%s" % str(node_id)
+        delete_api = ConfigClass.NEO4J_SERVICE + "nodes/Container/node/%s" % str(node_id)
         try:
             delete_res = requests.delete(delete_api)
             self.log.info(f"DELETE STATUS: {delete_res.status_code}")
@@ -75,7 +79,7 @@ class SetUpTest:
                     }
         if file_event.get("parent_geid"):
             payload["parent_folder_geid"] = file_event.get("parent_geid")
-        testing_api = ConfigClass.DATAOPS_UT + '/v1/filedata/'
+        testing_api = ConfigClass.DATA_UTILITY_SERVICE + 'filedata/'
         try:
             self.log.info(f'POST API: {testing_api}')
             self.log.info(f'POST API: {payload}')
@@ -92,7 +96,7 @@ class SetUpTest:
     def delete_file_entity(self, guid):
         self.log.info("\n")
         self.log.info("Preparing delete file entity".ljust(80, '-'))
-        delete_api = ConfigClass.CATALOGUING + '/v1/entity/guid/' + str(guid)
+        delete_api = ConfigClass.CATALOGUING_SERVICE + '/v1/entity/guid/' + str(guid)
         try:
             delete_res = requests.delete(delete_api)
             self.log.info(f"DELETE STATUS: {delete_res.status_code}")
@@ -105,7 +109,7 @@ class SetUpTest:
     def delete_file_node(self, node_id):
         self.log.info("\n")
         self.log.info("Preparing delete file node".ljust(80, '-'))
-        delete_api = ConfigClass.NEO4J_HOST + "/v1/neo4j/nodes/File/node/%s" % str(node_id)
+        delete_api = ConfigClass.NEO4J_SERVICE + "nodes/File/node/%s" % str(node_id)
         try:
             delete_res = requests.delete(delete_api)
             self.log.info(f"DELETE STATUS: {delete_res.status_code}")

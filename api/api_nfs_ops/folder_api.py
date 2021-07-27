@@ -11,11 +11,21 @@ from flask_restx import Api, Resource
 from api import nfs_entity_ns
 from itertools import product
 
+from services.logger_services.logger_factory_service import SrvLoggerFactory
+from services.minio_service.minio_client import Minio_Client
+from minio.versioningconfig import OFF, SUSPENDED, VersioningConfig, ENABLED
+from minio.notificationconfig import (NotificationConfig, PrefixFilterRule,
+                                      QueueConfig)
+from minio.sseconfig import Rule, SSEConfig
+
 from resources.swagger_modules import folder, success_return, folder_return
 from resources.decorator import check_role
 
 
 class folders(Resource):
+
+    _logger = SrvLoggerFactory('api_nfs_ops').get_logger()
+
 
     @nfs_entity_ns.expect(folder)
     @nfs_entity_ns.response(200, success_return)
@@ -27,8 +37,8 @@ class folders(Resource):
         '''
         # Get folder path from args
         post_data = request.get_json()
-        container_id = post_data.get('container_id', None)
-
+        # container_id = post_data.get('container_id', None)
+        project_geid = post_data.get('project_geid', None)
         # Determine root path
         service = post_data.get('service', None)
         root_path = ConfigClass.NFS_ROOT_PATH
@@ -37,10 +47,13 @@ class folders(Resource):
 
         # Fetch upload path from neo4j service
         container_path = ''
-        if(container_id is not None):
+
+        if(project_geid is not None):
             try:
+                query_params = {"global_entity_id": project_geid}
+                container_id = get_container_id(query_params)
                 url = ConfigClass.NEO4J_SERVICE + \
-                    'nodes/Dataset/node/' + str(container_id)
+                    'nodes/Container/node/' + str(container_id)
                 res = requests.get(url=url)
             except Exception as e:
                 return {'Error': str(e)}, 403
@@ -65,6 +78,42 @@ class folders(Resource):
         except Exception as e:
             return {'Error': str(e)}, 403
 
+
+        # also create a bucket in minio but skip the error
+        # only create at root level
+        try:
+            if project_geid is None:
+                bucket_prefix = "gr-"
+                if service == 'VRE':
+                    bucket_prefix = "core-"
+                project_code = sub_path.split('/')[0]
+                bukcet_name = bucket_prefix + project_code
+
+                # set minio bucket with versioning and encrytion
+                mc = Minio_Client()
+                if mc.client.bucket_exists(bukcet_name) != True:
+                    mc.client.make_bucket(bukcet_name)
+                    mc.client.set_bucket_versioning(bukcet_name, VersioningConfig(ENABLED))
+                    mc.client.set_bucket_encryption(
+                        bukcet_name, SSEConfig(Rule.new_sse_s3_rule()),
+                    )
+
+                    # # set the policy above to target bucket
+                    # config = NotificationConfig(
+                    #     queue_config_list=[
+                    #         QueueConfig(
+                    #             "arn:minio:sqs::_:amqp",
+                    #             ["s3:ObjectCreated:*", "s3:ObjectRemoved:*", "s3:ObjectAccessed:*"],
+                    #             config_id="1",
+                    #         ),
+                    #     ],
+                    # )
+                    # res = client.set_bucket_notification(bukcet_name, config)
+
+        except Exception as e:
+            self._logger.error(e)
+
+
         return {'result': 'success'}, 200
 
     @nfs_entity_ns.doc(params={'field': {'type': 'string'}})
@@ -78,14 +127,17 @@ class folders(Resource):
         '''
 
         # Get folder path from args, decode utf-8
+        project_geid = request.args.get('project_geid', None)
         container_id = request.args.get('container_id', None)
         container_path = ""
         system_folder = ['workdir','logs','trash']
         # Fetch upload path from neo4j service
-        if(container_id is not None):
+        if(project_geid is not None):
             try:
+                query_params = {"global_entity_id": project_geid}
+                container_id = get_container_id(query_params)
                 url = ConfigClass.NEO4J_SERVICE + \
-                    'nodes/Dataset/node/' + str(container_id)
+                    'nodes/Container/node/' + str(container_id)
                 res = requests.get(url=url)
             except Exception as e:
                 return {'Error': str(e)}, 403
@@ -133,3 +185,16 @@ class folders(Resource):
             return {'result': {'gr': gr_folders }}, 200
 
         return {'result': {'gr': gr_folders, 'vre': vre_folders}}, 200
+
+
+def get_container_id(query_params):
+    url = ConfigClass.NEO4J_SERVICE + f"nodes/Container/query"
+    payload = {
+        **query_params
+    }
+    result = requests.post(url, json=payload)
+    if result.status_code != 200 or result.json() == []:
+        return None
+    result = result.json()[0]
+    container_id = result["id"]
+    return container_id

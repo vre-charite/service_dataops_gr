@@ -18,12 +18,14 @@ args_model_get = {
     'timestamp': {'type': 'string'},
 }
 
+
 class CheckUploadStateRestful(Resource):
     _logger = SrvLoggerFactory('api_file_upload').get_logger()
 
     @api_file_upload_ns.doc(params=args_model_get)
     @jwt_required()
-    def get(self, container_id):
+    # def get(self, container_id):
+    def get(self, project_geid):
         '''
         This method allow to check file upload status. timestamp optional,
         default return today's session
@@ -33,7 +35,7 @@ class CheckUploadStateRestful(Resource):
         _res = APIResponse()
         self._logger.info('CheckUploadStatusRestful Request IP: ' + str(request.remote_addr))
         self._logger.info(
-            'Check Upload Task Status on container {} with info {}'.format(str(container_id), request.args.to_dict()))
+            'Check Upload Task Status on container {} with info {}'.format(str(project_geid), request.args.to_dict()))
         self._logger.debug(request.headers.__dict__)
         session_id_gotten = get_session_id()
         self._logger.debug('session_id_gotten: {}'.format(session_id_gotten))
@@ -48,8 +50,7 @@ class CheckUploadStateRestful(Resource):
 
         return _res.to_dict, _res.code
 
-
-    def delete(self, container_id):
+    def delete(self, project_geid):
         '''
         This method allow to delete file upload status.
         '''

@@ -8,7 +8,7 @@ import requests
 
 class FileTagRestfulV2(Resource):
     _logger = SrvLoggerFactory('api_file_tag').get_logger()
-
+    """deprecated new endpoint in dataops_utility service : /v2/{entity}/{entity_geid}/tags"""
     def post(self, container_id):
         _res = APIResponse()
         post_data = request.get_json()

@@ -4,6 +4,9 @@ from .api_file_count import FileCount
 
 class APIFileCount(metaclass=MetaAPI):
     def api_registry(self):
+        # api_tags_ns.add_resource(
+        #    FileCount, '/containers/<container_id>/files/count'
+        # )
         api_tags_ns.add_resource(
-           FileCount, '/containers/<container_id>/files/count'
+           FileCount, '/containers/<project_geid>/files/count'
         )

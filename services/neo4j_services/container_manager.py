@@ -9,12 +9,12 @@ class SrvContainerManager(metaclass=MetaService):
         self.url = ConfigClass.NEO4J_SERVICE
 
     def fetch_container_by_id(self, container_id):
-        my_url = self.url + "nodes/Dataset/node/" + str(container_id)
+        my_url = self.url + "nodes/Container/node/" + str(container_id)
         res = requests.get(url=my_url)
         return json.loads(res.text)
 
     def list_containers(self, payload=None):
-        url = ConfigClass.NEO4J_SERVICE + "nodes/Dataset/query"
+        url = ConfigClass.NEO4J_SERVICE + "nodes/Container/query"
         res = requests.post(
             url=url,
             json=payload

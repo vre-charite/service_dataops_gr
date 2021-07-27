@@ -22,7 +22,12 @@ def validate_taglist(taglist, internal=False):
             "code": EAPIResponseCode.bad_request
         }
 
-    if len(taglist) > 10:
+    # don't count copied-to-core in length limit
+    taglist_copy = taglist.copy()
+    if "copied-to-core" in taglist:
+        taglist_copy.remove("copied-to-core")
+
+    if len(taglist_copy) > 10:
         return False, {
             "error": 'limit of 10 tags', 
             "code": EAPIResponseCode.bad_request

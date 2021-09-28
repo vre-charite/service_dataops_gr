@@ -13,6 +13,9 @@ from itertools import product
 
 from services.logger_services.logger_factory_service import SrvLoggerFactory
 from services.minio_service.minio_client import Minio_Client
+from services.minio_service.policy_templates import create_admin_policy, \
+    create_collaborator_policy, create_contributor_policy
+
 from minio.versioningconfig import OFF, SUSPENDED, VersioningConfig, ENABLED
 from minio.notificationconfig import (NotificationConfig, PrefixFilterRule,
                                       QueueConfig)
@@ -98,17 +101,14 @@ class folders(Resource):
                         bukcet_name, SSEConfig(Rule.new_sse_s3_rule()),
                     )
 
-                    # # set the policy above to target bucket
-                    # config = NotificationConfig(
-                    #     queue_config_list=[
-                    #         QueueConfig(
-                    #             "arn:minio:sqs::_:amqp",
-                    #             ["s3:ObjectCreated:*", "s3:ObjectRemoved:*", "s3:ObjectAccessed:*"],
-                    #             config_id="1",
-                    #         ),
-                    #     ],
-                    # )
-                    # res = client.set_bucket_notification(bukcet_name, config)
+                    # also create the three policy for admin/contribute/collaborator
+                    policy_name = create_admin_policy(project_code)
+                    stream = os.popen('mc admin policy add minio %s %s'%(project_code+"-admin", policy_name))
+                    policy_name = create_contributor_policy(project_code)
+                    stream = os.popen('mc admin policy add minio %s %s'%(project_code+"-contributor", policy_name))
+                    policy_name = create_collaborator_policy(project_code)
+                    stream = os.popen('mc admin policy add minio %s %s'%(project_code+"-collaborator", policy_name))
+
 
         except Exception as e:
             self._logger.error(e)

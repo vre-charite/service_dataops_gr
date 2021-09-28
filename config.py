@@ -1,14 +1,37 @@
 import os
+import requests
+from requests.models import HTTPError
+
+# os.environ['env'] = 'test'
+srv_namespace = "service_dataops_gr"
+CONFIG_CENTER = "http://10.3.7.222:5062" \
+    if os.environ.get('env') == "test" \
+    else "http://common.utility:5062"
+
+
+def vault_factory() -> dict:
+    url = CONFIG_CENTER + \
+        "/v1/utility/config/{}".format(srv_namespace)
+    config_center_respon = requests.get(url)
+    if config_center_respon.status_code != 200:
+        raise HTTPError(config_center_respon.text)
+    return config_center_respon.json()['result']
 
 
 class ConfigClass(object):
-
+    vault = vault_factory()
     env = os.environ.get('env')
-
-    # NFS
-    # NFS_ROOT_PATH = os.path.expanduser("~/Desktop/indoc/fake_nfs")
+    disk_namespace = os.environ.get('namespace')
+    version = "0.1.0"
     NFS_ROOT_PATH = "/data/vre-storage"
     VRE_ROOT_PATH = "/vre-data"
+
+    # disk mounts
+    # NFS_ROOT_PATH = "./"
+    # VRE_ROOT_PATH = "/vre-data"
+    ROOT_PATH = {
+        "vre": "/vre-data"
+    }.get(os.environ.get('namespace'), "/data/vre-storage")
 
     # TEMP_BASE = os.path.expanduser("~/tmp/flask_uploads/")
     TEMP_BASE = "/tmp/dataops"
@@ -18,67 +41,36 @@ class ConfigClass(object):
     ARCHIVE_TYPES = [".zip"]
 
     # Neo4j Service
-    NEO4J_SERVICE = "http://neo4j.utility:5062/v1/neo4j/"
-    NEO4J_SERVICE_V2 = "http://neo4j.utility:5062/v2/neo4j/"
-    CATALOGUING_SERVICE = "http://cataloguing.utility:5064/v1/"
-    QUEUE_SERVICE = "http://queue-producer.greenroom:6060/v1/"
+    NEO4J_SERVICE = vault['NEO4J_SERVICE'] + "/v1/neo4j/"
+    NEO4J_SERVICE_V2 = vault['NEO4J_SERVICE'] + "/v2/neo4j/"
+    CATALOGUING_SERVICE = vault['CATALOGUING_SERVICE']+"/v1/"
+    QUEUE_SERVICE = vault['QUEUE_SERVICE']+"/v1/"
+    DATA_UTILITY_SERVICE = vault["DATA_OPS_UTIL"]+"/v1/"
 
-    # minio config
-    MINIO_OPENID_CLIENT = "react-app"
-    MINIO_ENDPOINT = "minio.minio:9000"
+    # minio
+    MINIO_OPENID_CLIENT = vault['MINIO_OPENID_CLIENT']
+    MINIO_ENDPOINT = vault['MINIO_ENDPOINT']
     MINIO_HTTPS = False
-    KEYCLOAK_URL = "http://keycloak.utility:8080"
-    MINIO_ACCESS_KEY = "indoc-minio"
-    MINIO_SECRET_KEY = "Trillian42!"
-
-
-    if env == "test":
-        DATA_UTILITY_SERVICE = "http://dataops-ut.utility:5063/v1/"
-
-        # minio config
-        MINIO_ENDPOINT = "10.3.7.220"
-        MINIO_HTTPS = False
-        KEYCLOAK_URL = "http://10.3.7.220" # for local test ONLY
-
-
-
-    # MINIO_OPENID_CLIENT = "react-app"
-    # if env == "staging":
-    #     # MINIO_ENDPOINT = "10.3.7.240:80"
-    #     MINIO_ENDPOINT = "minio.minio:9000"
-    #     MINIO_HTTPS = False
-    #     KEYCLOAK_URL = "http://10.3.7.240:80"
-    #     MINIO_TEST_PASS = "IndocStaging2021!"
-    # else:
-    #     MINIO_ENDPOINT = "10.3.7.220"
-    #     MINIO_HTTPS = False
-    #     KEYCLOAK_URL = "http://keycloak.utility:8080"
-    #     # KEYCLOAK_URL = "http://10.3.7.220" # for local test ONLY
-    #     MINIO_TEST_PASS = "admin"
-
+    KEYCLOAK_URL = vault['KEYCLOAK_URL']
+    MINIO_TEST_PASS = vault['MINIO_TEST_PASS']
+    MINIO_TMP_PATH = ROOT_PATH + '/tmp/'
+    MINIO_ACCESS_KEY = vault['MINIO_ACCESS_KEY']
+    MINIO_SECRET_KEY = vault['MINIO_SECRET_KEY']
 
     # Redis Service
-    REDIS_HOST = "redis-master.utility"
-    REDIS_PORT = 6379
-    REDIS_DB = 0
-    REDIS_PASSWORD = {
-        'staging': '8EH6QmEYJN',
-        'charite': 'o2x7vGQx6m'
-    }.get(env, "5wCCMMC1Lk")
+    REDIS_HOST = vault['REDIS_HOST']
+    REDIS_PORT = int(vault['REDIS_PORT'])
+    REDIS_DB = int(vault['REDIS_DB'])
+    REDIS_PASSWORD = vault['REDIS_PASSWORD']
 
+    RDS_HOST = vault['RDS_HOST']
+    RDS_PORT = vault['RDS_PORT']
+    RDS_DBNAME = vault['RDS_DBNAME']
+    RDS_USER = vault['RDS_USER']
+    RDS_PWD = vault['RDS_PWD']
+    RDS_SCHEMA_DEFAULT = vault['RDS_SCHEMA_DEFAULT']
+    OPS_DB_URI = f"postgresql://{RDS_USER}:{RDS_PWD}@{RDS_HOST}/{RDS_DBNAME}"
 
-    RDS_HOST = "opsdb.utility"
-    RDS_PORT = "5432"
-    RDS_DBNAME = "INDOC_VRE"
-    RDS_USER = "postgres"
-    RDS_PWD = "postgres"
-    RDS_SCHEMA_DEFAULT = "indoc_vre"
-    if env == "test":
-        RDS_HOST = '10.3.7.215'
-    if env == 'charite':
-        RDS_USER = "indoc_vre"
-        RDS_PWD = os.environ.get('RDS_PWD')
-    OPS_DB_URI= f"postgresql://{RDS_USER}:{RDS_PWD}@{RDS_HOST}/{RDS_DBNAME}"
     SQLALCHEMY_DATABASE_URI = OPS_DB_URI
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -88,3 +80,4 @@ class ConfigClass(object):
     JWT_AUTH_URL_RULE = None
 
     api_modules = ["api"]
+

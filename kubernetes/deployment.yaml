@@ -31,11 +31,10 @@ spec:
           env:
           - name: env
             value: "charite"
-          - name: RDS_PWD
-            valueFrom:
-              secretKeyRef:
-                name: opsdb
-                key: password
+          - name: CONFIG_CENTER_ENABLED
+            value: "true"
+          - name: CONFIG_CENTER_BASE_URL
+            value: "http://common.utility:5062/"
           readinessProbe:
             tcpSocket:
               port: 5063

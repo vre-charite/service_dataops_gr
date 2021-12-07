@@ -13,6 +13,15 @@ import services.file_upload as srv_upload
 import models.fsm_file_upload as fsmup
 from services.tags_services.tags_manager import SrvTagsMgr
 
+def get_geid():
+    url = ConfigClass.UTILITY_SERVICE + "utility/id"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()['result']
+    else:
+        raise Exception('get_geid {}: {}'.format(response.status_code, url))
+
+
 
 class fs(object):
     # -------------------------------------------------------------------- #

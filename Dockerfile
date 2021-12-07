@@ -15,5 +15,5 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 # CMD ["./gunicorn_starter.sh"]
-CMD ["sh", "-c", "mc alias set minio http://minio.minio:9000 indoc-minio Trillian42! && ./gunicorn_starter.sh"]
+CMD ["sh", "-c", "mc alias set minio http://minio.minio:9000 $MINIO_USERNAME $MINIO_PASSWORD && ./gunicorn_starter.sh"]
 # CMD ["python","app.py"]
